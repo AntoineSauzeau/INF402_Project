@@ -1,6 +1,9 @@
 import pygame
-
-black = 0, 0, 0
+from controller import Controller
 
 pygame.init()
-#screen = pygame.display.set_mode((500, 500))
+controller = Controller()
+controller.create_interface()
+controller.start_loop()
+
+
