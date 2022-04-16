@@ -39,12 +39,6 @@ class Controller():
             except KeyboardInterrupt:
                 self.quit();
 
-
-            except Exception as err:
-                print(err)
-                sys.exit(-1)
-
-
             clock.tick(self.FPS);
 
 

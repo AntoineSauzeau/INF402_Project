@@ -1,4 +1,5 @@
 from enum import Enum
+from select import select
 from grid import CELL_SIZE, Grid
 from color import *
 import pygame
@@ -15,6 +16,10 @@ class Interface:
     l_tsw = []
     window_width=675
     window_height=450
+
+    l_cell_selected = []
+    select_mode = False
+    next_area_id = 0
 
     def __init__(self, controller):
         self.window = pygame.display.set_mode((self.window_width, self.window_height))
@@ -38,6 +43,16 @@ class Interface:
         self.bttn_resolve.set_border_color((0, 224, 73))
         self.bttn_resolve.set_border_thickness(3)
 
+        self.bttn_apply = Button("Appliquer")
+        self.bttn_apply.set_color(BLACK)
+        self.bttn_apply.set_background_color(WHITE)
+        self.bttn_apply.set_pos((100, 200))
+        self.bttn_apply.set_padding(10)
+        self.bttn_apply.set_text_size(24)
+        self.bttn_apply.set_border(True)
+        self.bttn_apply.set_border_color((0, 224, 73))
+        self.bttn_apply.set_border_thickness(3)
+
         self.bttn_reset = Button("Réinitialiser")
         self.bttn_reset.set_color(BLACK)
         self.bttn_reset.set_background_color(WHITE)
@@ -58,16 +73,32 @@ class Interface:
         self.bttn_random.set_border_color((0, 224, 73))
         self.bttn_random.set_border_thickness(3)
 
+        self.create_area = Button("Créer la région")
+        self.create_area.set_color(BLACK)
+        self.create_area.set_background_color(WHITE)
+        self.create_area.set_padding(10)
+        self.create_area.set_text_size(24)
+        self.create_area.set_border(True)
+        self.create_area.set_border_color((0, 224, 73))
+        self.create_area.set_border_thickness(3)
+
         self.l_button.append(self.bttn_resolve)
         self.l_button.append(self.bttn_reset)
         self.l_button.append(self.bttn_random)
+        self.l_button.append(self.bttn_apply)
+        self.l_button.append(self.create_area)
 
     def create_tsw(self):
         
         self.tsw_grid_size = TextSwitchWidget()
         self.tsw_grid_size.set_pos(100, 140)
-        self.tsw_grid_size.set_l_value(["0", "1", "2", "3"])
         self.tsw_grid_size.set_text_size(16)
+
+        l_value = []
+        for i in range(10, 31):
+            l_value.append(str(i))
+
+        self.tsw_grid_size.set_l_value(l_value)
 
         self.l_tsw.append(self.tsw_grid_size)
 
@@ -86,11 +117,61 @@ class Interface:
                 elif(tsw.in_arrow_right_bounds(mouse_x, mouse_y)):
                     tsw.next()
 
+            for bttn in self.l_button:
+
+                if bttn.in_bounds(mouse_x, mouse_y):
+                
+                    if(bttn.get_text() == "Appliquer"):
+                        self.grid.set_n_case_x(int(self.tsw_grid_size.get_displayed_value()))
+                        self.grid.set_n_case_y(int(self.tsw_grid_size.get_displayed_value()))
+                    elif(bttn.get_text() == "Créer la région"):
+
+                        for cell in self.l_cell_selected:
+                            cell.set_is_selected(False)
+
+                        self.l_cell_selected.clear()
+                    
+            if(e.button == 1):
+                if(self.select_mode):
+                    print(self.grid.is_cell_seq_linked(self.l_cell_selected))
+
+                self.select_mode=False
+                
+        elif(e.type == pygame.MOUSEBUTTONDOWN):
+            
+            mouse_x = e.pos[0]
+            mouse_y = e.pos[1]
+
+            if(e.button == 1):   #Left click
+                if(self.grid.is_in_grid(mouse_x, mouse_y)):
+
+                    self.select_mode = True
+
+                    cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y)
+                    self.l_cell_selected.append(cell)
+                    cell.set_is_selected(True)
+
+        elif(e.type == pygame.MOUSEMOTION):
+
+            mouse_x = e.pos[0]
+            mouse_y = e.pos[1]
+
+            if(self.grid.is_in_grid(mouse_x, mouse_y) and self.select_mode == True):
+
+                cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y)
+                if cell not in self.l_cell_selected:
+                    self.l_cell_selected.append(cell)
+                    cell.set_is_selected(True)
+
+
+
     def draw(self):
 
         if(self.get_size()[0] != self.window_width or self.get_size()[1] != self.window_height):
             (self.window_width, self.window_height) = self.get_size()
             self.update_window_size()
+
+        self.update_widget_pos()
         
         background_rect = (0, 0, self.window_width, self.window_height)
         pygame.draw.rect(self.window, (46, 40, 42), background_rect)
@@ -101,6 +182,9 @@ class Interface:
                 if(self.grid[l][c].get_type() == 0):
                     cell_color = WHITE
                 elif(self.grid[l][c].get_type() == 1):
+                    cell_color = BLACK
+
+                if(self.grid[l][c].get_is_selected() == True):
                     cell_color = BLACK
                 
                 cell_x = GRID_POS_X + c * CELL_SIZE
@@ -155,7 +239,12 @@ class Interface:
         self.window.blit(image_info, (self.window_width-25-image_info.get_width()/2, 25-image_info.get_height()/2))
 
         for button in self.l_button:
-            button.draw(self.window)
+
+            if button.get_text() == "Créer la région":
+                if len(self.l_cell_selected) != 0:
+                    button.draw(self.window)
+            else:
+                button.draw(self.window)
 
         for tsw in self.l_tsw:
             tsw.draw(self.window)
@@ -174,4 +263,11 @@ class Interface:
 
     def update_window_size(self):
         self.window = pygame.display.set_mode((self.get_size()[0], self.get_size()[1]))
+
+    def update_widget_pos(self):
+        self.bttn_resolve.set_pos((GRID_POS_X + self.grid.get_grid_width(), GRID_POS_Y + self.grid.get_grid_height() + 40))
+        self.create_area.set_pos((GRID_POS_X + 30, GRID_POS_Y + self.grid.get_grid_height() + 40))
+
+        self.bttn_reset.set_pos((100, self.window_height - 40))
+        self.bttn_random.set_pos((100, self.window_height - 90))
 
