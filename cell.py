@@ -1,15 +1,17 @@
 
 class Cell:
-    
-    area=-1
-    type=0  #Blanche ou noire
-    x_index=0
-    y_index=0
-    is_selected=False
 
     def __init__(self, x, y):
         self.x_index = x
         self.y_index = y
+        self.type=0  #Blanche ou noire
+        self.is_selected=False
+        self.area = -1
+
+    def reset(self):
+        self.type=0  
+        self.is_selected=False
+        self.area = -1
 
     def set_area(self, area):
         self.area = area

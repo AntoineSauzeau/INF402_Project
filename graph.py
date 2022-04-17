@@ -35,10 +35,6 @@ class Graph:
 
         self.rec_depth_path(s, l_vertex_visited)
 
-        """print(self.l_vertex)
-        print(l_vertex_visited)
-        print(l_vertex_visited[0].l_neighbors)"""
-
         return len(l_vertex_visited) == len(self.l_vertex)
 
 

@@ -35,6 +35,42 @@ class Grid:
     def is_in_grid(self, x, y):
         return x > self.pos_x and x < (self.pos_x + self.get_grid_width()) and y > self.pos_y and y < (self.pos_y + self.get_grid_height())
 
+    def get_top_cell(self, cell):
+        x = cell.get_x()
+        y = cell.get_y()
+
+        if y > 0:
+            return self.grid[y-1][x]
+        
+        return None
+
+    def get_bottom_cell(self, cell):
+        x = cell.get_x()
+        y = cell.get_y()
+
+        if y+1 != self.n_case_y:
+            return self.grid[y+1][x]
+        
+        return None
+
+    def get_left_cell(self, cell):
+            x = cell.get_x()
+            y = cell.get_y()
+
+            if x > 0:
+                return self.grid[y][x-1]
+            
+            return None
+
+    def get_right_cell(self, cell):
+            x = cell.get_x()
+            y = cell.get_y()
+
+            if x+1 != self.n_case_x:
+                return self.grid[y][x+1]
+            
+            return None
+
     def get_cell_neighbours(self, cell):
         l_neighbour = []
 
@@ -87,14 +123,42 @@ class Grid:
         print(seq_cell)
 
         return graph.is_connected()
-                    
 
+    def get_cell_by_area(self):
+        
+        l_cell_by_area = {}
+        for l in range(self.n_case_y):
+            for c in range(self.n_case_x):
 
+                cell = self.grid[l][c]
+                area = str(cell.get_area())
+                if area == "-1":
+                    continue
 
+                if area not in l_cell_by_area.keys():
+                    l_cell_by_area[area] = []
 
+                l_cell_by_area[area].append(cell)
 
+        return l_cell_by_area
 
+    def get_black_cell(self):
+        l_cell = []
 
+        for l in range(self.n_case_y):
+            for c in range(self.n_case_x):
+
+                cell = self.grid[l][c]
+                if cell.get_type() == 1:
+                    l_cell.append(cell)
+
+        return l_cell
+
+    def reset(self):
+        
+        for l in range(MAX_GRID_SIZE):
+            for c in range(MAX_GRID_SIZE):
+                self.grid[l][c].reset()
 
     def get_n_case_x(self):
         return self.n_case_x

@@ -6,6 +6,8 @@ import pygame
 from pathlib import Path
 from button_widget import Button
 from text_switch_widget import TextSwitchWidget
+from message import Message, Alignment
+import cnf
 
 GRID_POS_X = 280
 GRID_POS_Y = 50
@@ -14,11 +16,13 @@ class Interface:
 
     l_button = []
     l_tsw = []
+    l_msg = []
     window_width=675
     window_height=450
 
     l_cell_selected = []
     select_mode = False
+    remove_mode = False
     next_area_id = 0
 
     def __init__(self, controller):
@@ -30,6 +34,7 @@ class Interface:
 
         self.create_buttons()
         self.create_tsw()
+        self.create_messages()
 
     def create_buttons(self):
 
@@ -102,6 +107,12 @@ class Interface:
 
         self.l_tsw.append(self.tsw_grid_size)
 
+    def create_messages(self):
+
+        self.message_bad_selection = Message()
+
+        self.l_msg.append(self.message_bad_selection)
+
 
     def event(self, e):
         
@@ -124,23 +135,61 @@ class Interface:
                     if(bttn.get_text() == "Appliquer"):
                         self.grid.set_n_case_x(int(self.tsw_grid_size.get_displayed_value()))
                         self.grid.set_n_case_y(int(self.tsw_grid_size.get_displayed_value()))
+
                     elif(bttn.get_text() == "Créer la région"):
 
-                        for cell in self.l_cell_selected:
-                            cell.set_is_selected(False)
+                        #On vérifie que la région sélectionné est bien contigue
+                        if(self.grid.is_cell_seq_linked(self.l_cell_selected) == False):
+                            self.show_message_bad_selection()
+
+                            for cell in self.l_cell_selected:
+                                cell.set_is_selected(False)
+
+                        else:
+                            for cell in self.l_cell_selected:
+                                cell.set_area(self.next_area_id)
+                                cell.set_is_selected(False)
+
+                            self.next_area_id += 1
 
                         self.l_cell_selected.clear()
+
+                    elif(bttn.get_text() == "Réinitialiser"):
+                        self.grid.reset()
+                        self.l_cell_selected.clear()
+
+                    elif(bttn.get_text() == "Résoudre"):
+                        cnf_ = cnf.convert_grid_to_cnf(self.grid)
+                        cnf_.write_to_dimacs_file("file")
+                        print(cnf_)
                     
             if(e.button == 1):
                 if(self.select_mode):
                     print(self.grid.is_cell_seq_linked(self.l_cell_selected))
-
                 self.select_mode=False
+
+            elif(e.button == 2):
+
+                cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y)
+                if(cell.get_type() == 0):
+                    cell.set_type(1)
+                else:
+                    cell.set_type(0)
+
+                cell.set_area(-1)
+                print(cell.get_type())
+
+            elif(e.button == 3):
+                self.remove_mode=False
                 
         elif(e.type == pygame.MOUSEBUTTONDOWN):
             
             mouse_x = e.pos[0]
             mouse_y = e.pos[1]
+
+            if(e.button == 1 or e.button == 3):
+                if(self.grid.is_in_grid(mouse_x, mouse_y)):
+                    self.message_bad_selection.hide()
 
             if(e.button == 1):   #Left click
                 if(self.grid.is_in_grid(mouse_x, mouse_y)):
@@ -150,6 +199,16 @@ class Interface:
                     cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y)
                     self.l_cell_selected.append(cell)
                     cell.set_is_selected(True)
+
+            elif(e.button == 3):    #Right click
+                if(self.grid.is_in_grid(mouse_x, mouse_y)):
+
+                    self.remove_mode = True
+
+                    cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y)
+                    if cell in self.l_cell_selected:
+                        self.l_cell_selected.remove(cell)
+                        cell.set_is_selected(False)
 
         elif(e.type == pygame.MOUSEMOTION):
 
@@ -162,6 +221,13 @@ class Interface:
                 if cell not in self.l_cell_selected:
                     self.l_cell_selected.append(cell)
                     cell.set_is_selected(True)
+
+            elif(self.grid.is_in_grid(mouse_x, mouse_y) and self.remove_mode == True):
+
+                cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y)
+                if cell in self.l_cell_selected:
+                    self.l_cell_selected.remove(cell)
+                    cell.set_is_selected(False)
 
 
 
@@ -182,19 +248,18 @@ class Interface:
                 if(self.grid[l][c].get_type() == 0):
                     cell_color = WHITE
                 elif(self.grid[l][c].get_type() == 1):
-                    cell_color = BLACK
+                    cell_color = GREY_2
 
                 if(self.grid[l][c].get_is_selected() == True):
-                    cell_color = BLACK
+                    cell_color = RED
                 
                 cell_x = GRID_POS_X + c * CELL_SIZE
                 cell_y = GRID_POS_Y + l * CELL_SIZE
 
                 rect_cell = (cell_x, cell_y, CELL_SIZE, CELL_SIZE)
                 pygame.draw.rect(self.window, cell_color, rect_cell)
-
-                border_rect = (cell_x, cell_y, CELL_SIZE-1, CELL_SIZE-1)
-                pygame.draw.rect(self.window, BLUE, rect_cell, width=1)
+                
+                self.draw_cell_borders(self.grid[l][c], rect_cell)
 
 
         pygame.draw.line(self.window, WHITE, (210, 0), (210, self.window_height))
@@ -203,7 +268,7 @@ class Interface:
 
         for i in range(self.grid.get_n_case_x()):
 
-            text = font.render(str(i), True, WHITE)
+            text = font.render(str(i+1), True, WHITE)
             text_x = GRID_POS_X + CELL_SIZE/2 - text.get_width()/2 + i * CELL_SIZE
             text_y = GRID_POS_Y - 12 - text.get_height()/2
  
@@ -211,7 +276,7 @@ class Interface:
 
         for i in range(self.grid.get_n_case_y()):
 
-            text = font.render(str(i), True, WHITE)
+            text = font.render(str(i+1), True, WHITE)
             text_x = GRID_POS_X - 12 - text.get_width()/2
             text_y = GRID_POS_Y + CELL_SIZE/2 - text.get_height()/2 + i * CELL_SIZE
  
@@ -249,7 +314,50 @@ class Interface:
         for tsw in self.l_tsw:
             tsw.draw(self.window)
 
+        for msg in self.l_msg:
+            if msg.is_visible():
+                msg.draw(self.window)
+
         pygame.display.flip()
+
+    def draw_cell_borders(self, cell, rect_cell):
+
+        if(cell.get_area() == -1 and cell.get_type() == 0):
+            border_rect = (rect_cell[0], rect_cell[1], CELL_SIZE-1, CELL_SIZE-1)
+            pygame.draw.rect(self.window, BLUE, rect_cell, width=1)
+        else:
+            c_top = self.grid.get_top_cell(cell)
+            c_bottom = self.grid.get_bottom_cell(cell)
+            c_left = self.grid.get_left_cell(cell)
+            c_right = self.grid.get_right_cell(cell)
+ 
+            if(c_top == None or c_top.get_area() != cell.get_area() or cell.get_type() == 1):
+                top_border_rect = (rect_cell[0], rect_cell[1], CELL_SIZE, 3)
+                pygame.draw.rect(self.window, BLACK, top_border_rect, width=0)
+            else:
+                top_border_rect = (rect_cell[0], rect_cell[1], CELL_SIZE, 1)
+                pygame.draw.rect(self.window, GREY, top_border_rect, width=0)
+
+            if(c_bottom == None or c_bottom.get_area() != cell.get_area() or cell.get_type() == 1):
+                bottom_border_rect = (rect_cell[0], rect_cell[1] + CELL_SIZE - 2, CELL_SIZE, 2)
+                pygame.draw.rect(self.window, BLACK, bottom_border_rect, width=0)
+            else:
+                bottom_border_rect = (rect_cell[0], rect_cell[1] + CELL_SIZE - 1, CELL_SIZE, 1)
+                pygame.draw.rect(self.window, GREY, bottom_border_rect, width=0)
+
+            if(c_left == None or c_left.get_area() != cell.get_area() or cell.get_type() == 1):
+                left_border_rect = (rect_cell[0], rect_cell[1], 2, CELL_SIZE)
+                pygame.draw.rect(self.window, BLACK, left_border_rect, width=0)
+            else:
+                left_border_rect = (rect_cell[0], rect_cell[1], 1, CELL_SIZE)
+                pygame.draw.rect(self.window, GREY, left_border_rect, width=0)
+
+            if(c_right == None or c_right.get_area() != cell.get_area() or cell.get_type() == 1):
+                right_border_rect = (rect_cell[0] + CELL_SIZE - 2, rect_cell[1], 2, CELL_SIZE)
+                pygame.draw.rect(self.window, BLACK, right_border_rect, width=0)
+            else:
+                right_border_rect = (rect_cell[0] + CELL_SIZE - 1, rect_cell[1], 1, CELL_SIZE)
+                pygame.draw.rect(self.window, GREY, right_border_rect, width=0)
 
     def get_size(self):
 
@@ -270,4 +378,19 @@ class Interface:
 
         self.bttn_reset.set_pos((100, self.window_height - 40))
         self.bttn_random.set_pos((100, self.window_height - 90))
+
+    def show_message_bad_selection(self):
+
+        title_text = "Attention : La région doit être contigue"
+
+        self.message_bad_selection.set_text_title(title_text)
+        self.message_bad_selection.set_horizontal_alignment(Alignment.Center)
+        self.message_bad_selection.set_text_title_size(26)
+        self.message_bad_selection.set_color_title(RED)
+        self.message_bad_selection.set_background_color(GREY)
+        self.message_bad_selection.set_title_font_name(str(Path("Fonts/Roboto-Medium.ttf")))
+
+        self.message_bad_selection.set_pos((GRID_POS_X + 195, GRID_POS_Y + self.grid.get_grid_height() + 20))
+
+        self.message_bad_selection.show(10)
 
