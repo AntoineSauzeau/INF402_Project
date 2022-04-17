@@ -137,6 +137,56 @@ def convert_grid_to_cnf(grid):
                 cnf += clause_1
                 cnf += clause_2
 
+    #regle sur le placement des ballons (voir bille sur case noire)
+    for c in range(grid.get_n_case_x()):
+        for l in range(grid.get_n_case_y()):
+
+            cell = grid[l][c]
+
+            if cell.get_type() == 0 and l != 0:
+
+                for i in range(1, l+1):
+
+                    cell_2 = grid[l-i][c]
+
+                    if cell.get_type() == 1:
+                        continue 
+
+                    clause = Clause()
+
+                    lit_1 = Literal(get_literal_index("x", c, l, grid.get_n_case_x()), True)
+                    lit_2 = Literal(get_literal_index("x", c, l-i, grid.get_n_case_x()), False)
+            
+                    clause += lit_1
+                    clause += lit_2
+            
+                    cnf += clause
+
+    #regle sur le placement des billes (voir bille sur case noire)
+    for c in range(grid.get_n_case_x()):
+        for l in range(grid.get_n_case_y()):
+
+            cell = grid[l][c]
+
+            if cell.get_type() == 0 and l != grid.get_n_case_y():
+
+                for i in range(1, l+1):
+
+                    cell_2 = grid[l+i][c]
+
+                    if cell.get_type() == 1:
+                        continue 
+
+                    clause = Clause()
+
+                    lit_1 = Literal(get_literal_index("y", c, l, grid.get_n_case_x()), True)
+                    lit_2 = Literal(get_literal_index("y", c, l+i, grid.get_n_case_x()), False)
+            
+                    clause += lit_1
+                    clause += lit_2
+            
+                    cnf += clause
+
     return cnf
 
 def read_cnf_from_dimacs_file():
