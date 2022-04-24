@@ -2,8 +2,9 @@ from cell import Cell
 from graph import Graph, Vertex
 import interface
 
-CELL_SIZE=32        #Pixel
+
 MAX_GRID_SIZE=30
+GRID_SIZE = 540 #pixels
 
 class Grid:
 
@@ -12,6 +13,9 @@ class Grid:
     pos_x = 0
     pos_y = 0
     grid = []
+
+    l_ball_pos = []
+    l_marble_pos = []
 
     def __init__(self, x, y):
 
@@ -26,14 +30,14 @@ class Grid:
 
         for l in range(MAX_GRID_SIZE):
 
-            line_grid = [] 
+            line_grid = []
             for c in range(MAX_GRID_SIZE):
                 line_grid.append(Cell(c, l))
-            
+
             self.grid.append(line_grid)
 
     def is_in_grid(self, x, y):
-        return x > self.pos_x and x < (self.pos_x + self.get_grid_width()) and y > self.pos_y and y < (self.pos_y + self.get_grid_height())
+        return x > self.pos_x and x < (self.pos_x + GRID_SIZE) and y > self.pos_y and y < (self.pos_y + GRID_SIZE)
 
     def get_top_cell(self, cell):
         x = cell.get_x()
@@ -41,7 +45,7 @@ class Grid:
 
         if y > 0:
             return self.grid[y-1][x]
-        
+
         return None
 
     def get_bottom_cell(self, cell):
@@ -50,7 +54,7 @@ class Grid:
 
         if y+1 != self.n_case_y:
             return self.grid[y+1][x]
-        
+
         return None
 
     def get_left_cell(self, cell):
@@ -59,7 +63,7 @@ class Grid:
 
             if x > 0:
                 return self.grid[y][x-1]
-            
+
             return None
 
     def get_right_cell(self, cell):
@@ -68,7 +72,7 @@ class Grid:
 
             if x+1 != self.n_case_x:
                 return self.grid[y][x+1]
-            
+
             return None
 
     def get_cell_neighbours(self, cell):
@@ -88,10 +92,10 @@ class Grid:
 
         return l_neighbour
 
-    def get_cell_pos_from_pixel_coords(self, x, y):
+    def get_cell_pos_from_pixel_coords(self, x, y, nb_cases):
 
-        x_index = (x - interface.GRID_POS_X) // CELL_SIZE
-        y_index = (y - interface.GRID_POS_Y) // CELL_SIZE
+        x_index = (x - interface.GRID_POS_X) // int((GRID_SIZE/nb_cases))
+        y_index = (y - interface.GRID_POS_Y) // int((GRID_SIZE/nb_cases))
 
         return self.grid[y_index][x_index]
 
@@ -125,7 +129,7 @@ class Grid:
         return graph.is_connected()
 
     def get_cell_by_area(self):
-        
+
         l_cell_by_area = {}
         for l in range(self.n_case_y):
             for c in range(self.n_case_x):
@@ -155,7 +159,7 @@ class Grid:
         return l_cell
 
     def reset(self):
-        
+
         for l in range(MAX_GRID_SIZE):
             for c in range(MAX_GRID_SIZE):
                 self.grid[l][c].reset()
@@ -166,11 +170,11 @@ class Grid:
     def get_n_case_y(self):
         return self.n_case_y
 
-    def get_grid_width(self):
-        return CELL_SIZE * self.n_case_x
-    
-    def get_grid_height(self):
-        return CELL_SIZE * self.n_case_y
+    def get_l_marble_pos(self):
+        return self.l_marble_pos
+
+    def get_l_ball_pos(self):
+        return self.l_ball_pos
 
     def set_n_case_x(self, n):
         self.n_case_x = n

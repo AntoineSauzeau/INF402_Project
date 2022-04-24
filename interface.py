@@ -1,8 +1,9 @@
 from enum import Enum
 from select import select
-from grid import CELL_SIZE, Grid
+from grid import Grid, GRID_SIZE
 from color import *
 import pygame
+import pycryptosat
 from pathlib import Path
 from button_widget import Button
 from text_switch_widget import TextSwitchWidget
@@ -19,7 +20,7 @@ class Interface:
     l_msg = []
     window_width=675
     window_height=450
-
+    
     l_cell_selected = []
     select_mode = False
     remove_mode = False
@@ -41,7 +42,7 @@ class Interface:
         self.bttn_resolve = Button("Résoudre")
         self.bttn_resolve.set_color(BLACK)
         self.bttn_resolve.set_background_color(WHITE)
-        self.bttn_resolve.set_pos((GRID_POS_X + self.grid.get_grid_width(), GRID_POS_Y + self.grid.get_grid_height() + 40))
+        self.bttn_resolve.set_pos((GRID_POS_X + GRID_SIZE, GRID_POS_Y + GRID_SIZE + 40))
         self.bttn_resolve.set_padding(10)
         self.bttn_resolve.set_text_size(24)
         self.bttn_resolve.set_border(True)
@@ -100,7 +101,7 @@ class Interface:
         self.tsw_grid_size.set_text_size(16)
 
         l_value = []
-        for i in range(10, 31):
+        for i in range(4, 31):
             l_value.append(str(i))
 
         self.tsw_grid_size.set_l_value(l_value)
@@ -110,8 +111,10 @@ class Interface:
     def create_messages(self):
 
         self.message_bad_selection = Message()
+        self.message_insat = Message()
 
         self.l_msg.append(self.message_bad_selection)
+        self.l_msg.append(self.message_insat)
 
 
     def event(self, e):
@@ -158,10 +161,40 @@ class Interface:
                         self.grid.reset()
                         self.l_cell_selected.clear()
 
+                        self.grid.get_l_ball_pos().clear()
+                        self.grid.get_l_marble_pos().clear()
+
                     elif(bttn.get_text() == "Résoudre"):
+                        solver = pycryptosat.Solver()
                         cnf_ = cnf.convert_grid_to_cnf(self.grid)
-                        cnf_.write_to_dimacs_file("file")
-                        print(cnf_)
+                        name_file = input("nom du fichier DIMACS : ")
+                        cnf_.write_to_dimacs_file(name_file,self.grid.get_n_case_x(),self.grid.get_n_case_y(), solver)
+                        cnf2 = cnf.convert_cnf_to_3sat(cnf_,self.grid)
+                        name2 = name_file + "_3_sat"
+                        cnf2.write_to_dimacs_file(name2,self.grid.get_n_case_x(),self.grid.get_n_case_y(), solver)
+                        sat, sol = solver.solve()
+                        if sat == False :
+                            self.show_message_insat()
+                        else :
+                            for l in range(self.grid.get_n_case_x()):
+                                for c in range(self.grid.get_n_case_x()):
+                                    cell = self.grid[l][c]
+                                    if cell.get_type() == 0:
+    
+                                        center = (GRID_POS_X+c+GRID_SIZE/2/self.grid.get_n_case_x(),GRID_POS_Y+l+GRID_SIZE/2/self.grid.get_n_case_x())
+                                        b = l*self.grid.get_n_case_x()+c+1
+                                        n = (l*self.grid.get_n_case_x()+c+1)+ self.grid.get_n_case_x()**2
+                                        print(b,n, sol[b],sol[n])
+                                        if(sol[b] == True):
+                                            print("in")
+                                            self.grid.get_l_ball_pos().append((l, c))
+                                        elif(sol[n] == True):
+                                            self.grid.get_l_marble_pos().append((l, c))
+
+                        print(self.grid.get_l_ball_pos())
+                                        
+                                
+                                
                     
             if(e.button == 1):
                 if(self.select_mode):
@@ -170,7 +203,7 @@ class Interface:
 
             elif(e.button == 2):
 
-                cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y)
+                cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y,self.grid.get_n_case_x())
                 if(cell.get_type() == 0):
                     cell.set_type(1)
                 else:
@@ -196,7 +229,7 @@ class Interface:
 
                     self.select_mode = True
 
-                    cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y)
+                    cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y,self.grid.get_n_case_x() )
                     self.l_cell_selected.append(cell)
                     cell.set_is_selected(True)
 
@@ -205,7 +238,7 @@ class Interface:
 
                     self.remove_mode = True
 
-                    cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y)
+                    cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y,self.grid.get_n_case_x())
                     if cell in self.l_cell_selected:
                         self.l_cell_selected.remove(cell)
                         cell.set_is_selected(False)
@@ -217,14 +250,14 @@ class Interface:
 
             if(self.grid.is_in_grid(mouse_x, mouse_y) and self.select_mode == True):
 
-                cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y)
+                cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y,self.grid.get_n_case_x())
                 if cell not in self.l_cell_selected:
                     self.l_cell_selected.append(cell)
                     cell.set_is_selected(True)
 
             elif(self.grid.is_in_grid(mouse_x, mouse_y) and self.remove_mode == True):
 
-                cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y)
+                cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y,self.grid.get_n_case_y())
                 if cell in self.l_cell_selected:
                     self.l_cell_selected.remove(cell)
                     cell.set_is_selected(False)
@@ -253,10 +286,10 @@ class Interface:
                 if(self.grid[l][c].get_is_selected() == True):
                     cell_color = RED
                 
-                cell_x = GRID_POS_X + c * CELL_SIZE
-                cell_y = GRID_POS_Y + l * CELL_SIZE
+                cell_x = GRID_POS_X + c * (GRID_SIZE/self.grid.get_n_case_x())
+                cell_y = GRID_POS_Y + l * (GRID_SIZE/self.grid.get_n_case_x())
 
-                rect_cell = (cell_x, cell_y, CELL_SIZE, CELL_SIZE)
+                rect_cell = (cell_x, cell_y, (GRID_SIZE/self.grid.get_n_case_x()), (GRID_SIZE/self.grid.get_n_case_x()))
                 pygame.draw.rect(self.window, cell_color, rect_cell)
                 
                 self.draw_cell_borders(self.grid[l][c], rect_cell)
@@ -269,7 +302,7 @@ class Interface:
         for i in range(self.grid.get_n_case_x()):
 
             text = font.render(str(i+1), True, WHITE)
-            text_x = GRID_POS_X + CELL_SIZE/2 - text.get_width()/2 + i * CELL_SIZE
+            text_x = GRID_POS_X + (GRID_SIZE/self.grid.get_n_case_x())/2 - text.get_width()/2 + i * (GRID_SIZE/self.grid.get_n_case_x())
             text_y = GRID_POS_Y - 12 - text.get_height()/2
  
             self.window.blit(text, (text_x, text_y))
@@ -278,13 +311,13 @@ class Interface:
 
             text = font.render(str(i+1), True, WHITE)
             text_x = GRID_POS_X - 12 - text.get_width()/2
-            text_y = GRID_POS_Y + CELL_SIZE/2 - text.get_height()/2 + i * CELL_SIZE
+            text_y = GRID_POS_Y + (GRID_SIZE/self.grid.get_n_case_x())/2 - text.get_height()/2 + i * (GRID_SIZE/self.grid.get_n_case_x())
  
             self.window.blit(text, (text_x, text_y))
 
         font = pygame.font.SysFont(str(Path("Fonts/Roboto-Medium.ttf")), size=35)
 
-        text_title = font.render("Dosum fuwaru", True, WHITE)
+        text_title = font.render("Dosum fuwari", True, WHITE)
         text_x = 20 - text.get_width()/2
         text_y = 100 - text.get_height()/2
  
@@ -302,6 +335,21 @@ class Interface:
         image_info.convert()
         image_info = pygame.transform.smoothscale(image_info, (25, 25))
         self.window.blit(image_info, (self.window_width-25-image_info.get_width()/2, 25-image_info.get_height()/2))
+
+        cell_size = GRID_SIZE/self.grid.get_n_case_x()
+        for ball_case_pos in self.grid.get_l_ball_pos():
+
+            ball_x = GRID_POS_X + ball_case_pos[0] * cell_size + cell_size/2
+            ball_y = GRID_POS_Y + ball_case_pos[1] * cell_size + cell_size/2
+
+            pygame.draw.circle(self.window, BLACK, (ball_x, ball_y), cell_size/4, width=2)
+
+        for marble_case_pos in self.grid.get_l_marble_pos():
+
+            marble_x = GRID_POS_X + marble_case_pos[0] * cell_size + cell_size/2
+            marble_y = GRID_POS_Y + marble_case_pos[1] * cell_size + cell_size/2
+
+            pygame.draw.circle(self.window, BLACK, (marble_x, marble_y), cell_size/4)
 
         for button in self.l_button:
 
@@ -323,8 +371,8 @@ class Interface:
     def draw_cell_borders(self, cell, rect_cell):
 
         if(cell.get_area() == -1 and cell.get_type() == 0):
-            border_rect = (rect_cell[0], rect_cell[1], CELL_SIZE-1, CELL_SIZE-1)
-            pygame.draw.rect(self.window, BLUE, rect_cell, width=1)
+            border_rect = (rect_cell[0], rect_cell[1], (GRID_SIZE/self.grid.get_n_case_x())-1, (GRID_SIZE/self.grid.get_n_case_x())-1)
+            pygame.draw.rect(self.window, BLUE, rect_cell, width=2)
         else:
             c_top = self.grid.get_top_cell(cell)
             c_bottom = self.grid.get_bottom_cell(cell)
@@ -332,40 +380,40 @@ class Interface:
             c_right = self.grid.get_right_cell(cell)
  
             if(c_top == None or c_top.get_area() != cell.get_area() or cell.get_type() == 1):
-                top_border_rect = (rect_cell[0], rect_cell[1], CELL_SIZE, 3)
+                top_border_rect = (rect_cell[0], rect_cell[1], (GRID_SIZE/self.grid.get_n_case_x()), 3)
                 pygame.draw.rect(self.window, BLACK, top_border_rect, width=0)
             else:
-                top_border_rect = (rect_cell[0], rect_cell[1], CELL_SIZE, 1)
+                top_border_rect = (rect_cell[0], rect_cell[1], (GRID_SIZE/self.grid.get_n_case_x()), 1)
                 pygame.draw.rect(self.window, GREY, top_border_rect, width=0)
 
             if(c_bottom == None or c_bottom.get_area() != cell.get_area() or cell.get_type() == 1):
-                bottom_border_rect = (rect_cell[0], rect_cell[1] + CELL_SIZE - 2, CELL_SIZE, 2)
+                bottom_border_rect = (rect_cell[0], rect_cell[1] + (GRID_SIZE/self.grid.get_n_case_x()) - 2, (GRID_SIZE/self.grid.get_n_case_x()), 2)
                 pygame.draw.rect(self.window, BLACK, bottom_border_rect, width=0)
             else:
-                bottom_border_rect = (rect_cell[0], rect_cell[1] + CELL_SIZE - 1, CELL_SIZE, 1)
+                bottom_border_rect = (rect_cell[0], rect_cell[1] + (GRID_SIZE/self.grid.get_n_case_x()) - 1, (GRID_SIZE/self.grid.get_n_case_x()), 1)
                 pygame.draw.rect(self.window, GREY, bottom_border_rect, width=0)
 
             if(c_left == None or c_left.get_area() != cell.get_area() or cell.get_type() == 1):
-                left_border_rect = (rect_cell[0], rect_cell[1], 2, CELL_SIZE)
+                left_border_rect = (rect_cell[0], rect_cell[1], 2, (GRID_SIZE/self.grid.get_n_case_x()))
                 pygame.draw.rect(self.window, BLACK, left_border_rect, width=0)
             else:
-                left_border_rect = (rect_cell[0], rect_cell[1], 1, CELL_SIZE)
+                left_border_rect = (rect_cell[0], rect_cell[1], 1, (GRID_SIZE/self.grid.get_n_case_x()))
                 pygame.draw.rect(self.window, GREY, left_border_rect, width=0)
 
             if(c_right == None or c_right.get_area() != cell.get_area() or cell.get_type() == 1):
-                right_border_rect = (rect_cell[0] + CELL_SIZE - 2, rect_cell[1], 2, CELL_SIZE)
+                right_border_rect = (rect_cell[0] + (GRID_SIZE/self.grid.get_n_case_x()) - 2, rect_cell[1], 2, (GRID_SIZE/self.grid.get_n_case_x()))
                 pygame.draw.rect(self.window, BLACK, right_border_rect, width=0)
             else:
-                right_border_rect = (rect_cell[0] + CELL_SIZE - 1, rect_cell[1], 1, CELL_SIZE)
+                right_border_rect = (rect_cell[0] + (GRID_SIZE/self.grid.get_n_case_x()) - 1, rect_cell[1], 1, (GRID_SIZE/self.grid.get_n_case_x()))
                 pygame.draw.rect(self.window, GREY, right_border_rect, width=0)
 
     def get_size(self):
 
         frame_1_width = 210
-        frame_2_width = 70 + self.grid.get_grid_width() + 75
+        frame_2_width = 70 + GRID_SIZE + 75
 
         width = frame_1_width + frame_2_width
-        height = 50 + self.grid.get_grid_height() + 80
+        height = 50 + GRID_SIZE + 80
 
         return (width, height)
 
@@ -373,8 +421,8 @@ class Interface:
         self.window = pygame.display.set_mode((self.get_size()[0], self.get_size()[1]))
 
     def update_widget_pos(self):
-        self.bttn_resolve.set_pos((GRID_POS_X + self.grid.get_grid_width(), GRID_POS_Y + self.grid.get_grid_height() + 40))
-        self.create_area.set_pos((GRID_POS_X + 30, GRID_POS_Y + self.grid.get_grid_height() + 40))
+        self.bttn_resolve.set_pos((GRID_POS_X + GRID_SIZE, GRID_POS_Y + GRID_SIZE + 40))
+        self.create_area.set_pos((GRID_POS_X + 30, GRID_POS_Y + GRID_SIZE + 40))
 
         self.bttn_reset.set_pos((100, self.window_height - 40))
         self.bttn_random.set_pos((100, self.window_height - 90))
@@ -390,7 +438,22 @@ class Interface:
         self.message_bad_selection.set_background_color(GREY)
         self.message_bad_selection.set_title_font_name(str(Path("Fonts/Roboto-Medium.ttf")))
 
-        self.message_bad_selection.set_pos((GRID_POS_X + 195, GRID_POS_Y + self.grid.get_grid_height() + 20))
+        self.message_bad_selection.set_pos((GRID_POS_X + 195, GRID_POS_Y + GRID_SIZE + 20))
 
         self.message_bad_selection.show(10)
+
+    def show_message_insat(self):
+
+        title_text = "Cette grille est insatisfiable"
+
+        self.message_insat.set_text_title(title_text)
+        self.message_insat.set_horizontal_alignment(Alignment.Center)
+        self.message_insat.set_text_title_size(26)
+        self.message_insat.set_color_title(RED)
+        self.message_insat.set_background_color(GREY)
+        self.message_insat.set_title_font_name(str(Path("Fonts/Roboto-Medium.ttf")))
+
+        self.message_insat.set_pos((GRID_POS_X + 195, GRID_POS_Y + GRID_SIZE + 20))
+
+        self.message_insat.show(10)
 

@@ -31,6 +31,9 @@ class Clause:
 
     def get_l_literal(self):
         return self.l_literal
+    
+    def __len__(self):
+        return len(self.l_literal)
 
 class Cnf:
 
@@ -56,7 +59,7 @@ class Cnf:
         return len(l_variable)
 
 
-    def write_to_dimacs_file(self, file_name):
+    def write_to_dimacs_file(self, file_name,x,y,solver):
         try:
             file = open(file_name, "w")
         except IOError:
@@ -66,6 +69,11 @@ class Cnf:
 
         for clause in self.l_clause:
             file.write(str(clause) + "0\n")
+            l = clause.get_l_literal()
+            l2 = []
+            for lit in l:
+                l2.append(int(str(lit)))
+            solver.add_clause(l2)
 
 
 
@@ -95,7 +103,7 @@ def convert_grid_to_cnf(grid):
 
             cnf += clause
 
-    #∀(i1, j1)...(in, jm) ∈ Rk, (xi1,j1 ∨ ... ∨ xin,jm ) ∧ (yi1,j1 ∨ ... ∨ yin,jm )
+    #∀(i1, j1)...(in, jm) ∈ Rk, (xi1,j1 ∨ ... ∨ xin,jm ) ∧ (yi1,j1 ∨ ... ∨ yin,jm ) ---> au moins une bille et balle par région
     for area in l_cell_by_area.keys():
 
         clause_1 = Clause()
@@ -117,7 +125,7 @@ def convert_grid_to_cnf(grid):
         for cell_1 in l_cell_by_area[area]:
             for cell_2 in l_cell_by_area[area]:
 
-                if cell_1 == cell_2:
+                if cell_1.get_y() * grid.get_n_case_x() + cell_1.get_x() >= cell_2.get_y() * grid.get_n_case_x() + cell_2.get_x() :
                     continue
                 
                 clause_1 = Clause()
@@ -126,8 +134,8 @@ def convert_grid_to_cnf(grid):
                 lit_1 = Literal(get_literal_index("x", cell_1.get_x(), cell_1.get_y(), grid.get_n_case_x()), True)
                 lit_2 = Literal(get_literal_index("x", cell_2.get_x(), cell_2.get_y(), grid.get_n_case_x()), True)
 
-                lit_3 = Literal(get_literal_index("y", cell_1.get_x(), cell_2.get_y(), grid.get_n_case_x()), True)
-                lit_4 = Literal(get_literal_index("y", cell_1.get_x(), cell_2.get_y(), grid.get_n_case_x()), True)
+                lit_3 = Literal(get_literal_index("y", cell_1.get_x(), cell_1.get_y(), grid.get_n_case_x()), True)
+                lit_4 = Literal(get_literal_index("y", cell_2.get_x(), cell_2.get_y(), grid.get_n_case_x()), True)
 
                 clause_1 += lit_1
                 clause_1 += lit_2
@@ -137,7 +145,7 @@ def convert_grid_to_cnf(grid):
                 cnf += clause_1
                 cnf += clause_2
 
-    #regle sur le placement des ballons (voir bille sur case noire)
+    #regle sur le placement des ballons
     for c in range(grid.get_n_case_x()):
         for l in range(grid.get_n_case_y()):
 
@@ -149,8 +157,8 @@ def convert_grid_to_cnf(grid):
 
                     cell_2 = grid[l-i][c]
 
-                    if cell.get_type() == 1:
-                        continue 
+                    if cell_2.get_type() == 1:
+                        break 
 
                     clause = Clause()
 
@@ -162,20 +170,20 @@ def convert_grid_to_cnf(grid):
             
                     cnf += clause
 
-    #regle sur le placement des billes (voir bille sur case noire)
+    #regle sur le placement des billes
     for c in range(grid.get_n_case_x()):
         for l in range(grid.get_n_case_y()):
 
             cell = grid[l][c]
 
-            if cell.get_type() == 0 and l != grid.get_n_case_y():
-
-                for i in range(1, l+1):
+            if cell.get_type() == 0 and l != grid.get_n_case_y()-1:
+    
+                for i in range(1, grid.get_n_case_y()-l):
 
                     cell_2 = grid[l+i][c]
 
-                    if cell.get_type() == 1:
-                        continue 
+                    if cell_2.get_type() == 1:
+                        break
 
                     clause = Clause()
 
@@ -189,9 +197,96 @@ def convert_grid_to_cnf(grid):
 
     return cnf
 
-def read_cnf_from_dimacs_file():
+def read_cnf_from_dimacs_file():   
     pass
 
-def convert_cnf_to_3sat():
-    pass
+def convert_cnf_to_3sat(cnf,grid):
+    cnf2 = Cnf()
+    liste_clauses2 = cnf2.get_l_clause()
+    nb_variables = grid.get_n_case_x()*grid.get_n_case_y()*2
+    liste_clauses = cnf.get_l_clause()
+    for clause in liste_clauses :
+        # un littéral x dans la clause : 
+        # nouvelles clauses = {x+y1+y2; x+ !y1 +y2; x+y1+ !y2 ;x+ !y1 + !y2} 
+        # où y1 et y2 sont des nouvelles variables.
+        if len(clause)== 1:
+            c1 = Clause()
+            c2 = Clause()
+            c3 = Clause()
+            c4 = Clause()
+            l = str(clause.get_l_literal()[0])
+            lit1 = str(Literal(nb_variables+1,False)) 
+            lit1n = str(Literal(nb_variables+1,True))
+            lit2 = str(Literal(nb_variables+2,False))
+            lit2n = str(Literal(nb_variables+2,True))
+            c1+= l
+            c1+= lit1
+            c1+= lit2
+            c2+= l
+            c2+=lit1
+            c2+= lit2n
+            c3+= l
+            c3+= lit1n
+            c3+= lit2n
+            c4+= l
+            c4+= lit1n
+            c4+=lit2
+            cnf2 += c1
+            cnf2 += c2
+            cnf2 += c3
+            cnf2 += c4     
+                   
+        # deux littéraux x et y dans la clause : 
+        # nouvelles clauses = {x+y+z; x+y+!z} 
+        # où z est une nouvelle variable.
+        elif len(clause)==2:
+            c1 = Clause()
+            c2 = Clause()
+            l1 = str(clause.get_l_literal()[0])
+            l2 = str(clause.get_l_literal()[1])
+            lit1 = str(Literal(nb_variables+1,False))
+            lit1n = str(Literal(nb_variables+1,True))
+            c1+= l1
+            c1+= lit1
+            c1+= l2
+            c2+= l1
+            c2+= lit1n
+            c2+= l2
+            cnf2 += c1
+            cnf2 += c2
+        # plus de 3 littéraux dans la clause (k littéraux) : 
+        # nouvelles clauses = {x1+x2+y1; !y1+x3+y2; !y2+x4+y3; !y3+x5+y4; ...; !y(k−3)+x(k−1)+x(k)} 
+        # où y sont les nouvelles variables.
+        elif len(clause)>3:
+            c1 = Clause()
+            l1 = str(clause.get_l_literal()[0])
+            l2 = str(clause.get_l_literal()[1])
+            lit1 = str(Literal(nb_variables+1,False))
+            c1+=l1
+            c1+=l2
+            c1+=lit1
+            cnf2+=c1
+            for i in range(1,len(clause)-3):
+                c = Clause()
+                lit1 = str(Literal(nb_variables+i,True))
+                lit2 = str(Literal(nb_variables+i+1,False))
+                l2 = str(clause.get_l_literal()[i+1])
+                c += l2
+                c += lit1
+                c += lit2 
+                cnf2+=c
+            c2 = Clause()
+            l1 = str(clause.get_l_literal()[len(clause)-2])
+            l2 = str(clause.get_l_literal()[len(clause)-1])
+            lit1 = str(Literal(nb_variables+len(clause)-2,True))
+            c2+=l1
+            c2+=l2
+            c2+=lit1
+            cnf2+=c2
+            
+        else :
+            cnf2 += clause
+            
+            
+    return cnf2
 
