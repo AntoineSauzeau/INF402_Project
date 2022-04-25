@@ -9,6 +9,7 @@ from button_widget import Button
 from text_switch_widget import TextSwitchWidget
 from message import Message, Alignment
 import cnf
+import webbrowser
 
 GRID_POS_X = 280
 GRID_POS_Y = 50
@@ -36,6 +37,8 @@ class Interface:
         self.create_buttons()
         self.create_tsw()
         self.create_messages()
+
+        self.load_images()
 
     def create_buttons(self):
 
@@ -116,6 +119,12 @@ class Interface:
         self.l_msg.append(self.message_bad_selection)
         self.l_msg.append(self.message_insat)
 
+    def load_images(self):
+
+        self.image_info = pygame.image.load(str(Path("Images/info.png")))
+        self.image_info.convert()
+        self.image_info = pygame.transform.smoothscale(self.image_info, (25, 25))
+
 
     def event(self, e):
         
@@ -123,6 +132,13 @@ class Interface:
 
             mouse_x = e.pos[0]
             mouse_y = e.pos[1]
+
+            image_info_x = self.window_width-25-self.image_info.get_width()/2
+            image_info_y = 25-self.image_info.get_height()/2
+
+            if mouse_x >= image_info_x and mouse_x <= image_info_x + self.image_info.get_width():
+                if mouse_y >= image_info_y and mouse_y <= image_info_y + self.image_info.get_height():
+                    webbrowser.open('http://www.cross-plus-a.com/fr/html/cros7dsfw.htm', new=2)
 
             for tsw in self.l_tsw:
 
@@ -165,32 +181,7 @@ class Interface:
                         self.grid.get_l_marble_pos().clear()
 
                     elif(bttn.get_text() == "Résoudre"):
-                        solver = pycryptosat.Solver()
-                        cnf_ = cnf.convert_grid_to_cnf(self.grid)
-                        name_file = "file"
-                        cnf_.write_to_dimacs_file(name_file,self.grid.get_n_case_x(),self.grid.get_n_case_y(), solver)
-                        cnf2 = cnf.convert_cnf_to_3sat(cnf_,self.grid)
-                        name2 = name_file + "_3_sat"
-                        cnf2.write_to_dimacs_file(name2,self.grid.get_n_case_x(),self.grid.get_n_case_y(), solver)
-                        sat, sol = solver.solve()
-                        if sat == False :
-                            self.show_message_insat()
-                        else :
-                            for l in range(self.grid.get_n_case_x()):
-                                for c in range(self.grid.get_n_case_x()):
-                                    cell = self.grid[l][c]
-                                    if cell.get_type() == 0:
-    
-                                        
-                                        b = l*self.grid.get_n_case_x()+c+1
-                                        n = (l*self.grid.get_n_case_x()+c+1)+ self.grid.get_n_case_x()**2
-                                        if(sol[b] == True):
-                                            self.grid.get_l_ball_pos().append((c, l))
-                                        elif(sol[n] == True):
-                                            self.grid.get_l_marble_pos().append((c, l))
-
-                                        
-                                
+                        self.solve_grid()     
                                 
                     
             if(e.button == 1):
@@ -226,9 +217,10 @@ class Interface:
 
                     self.select_mode = True
 
-                    cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y,self.grid.get_n_case_x() )
-                    self.l_cell_selected.append(cell)
-                    cell.set_is_selected(True)
+                    cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y,self.grid.get_n_case_x())
+                    if cell not in self.l_cell_selected:
+                        self.l_cell_selected.append(cell)
+                        cell.set_is_selected(True)
 
             elif(e.button == 3):    #Right click
                 if(self.grid.is_in_grid(mouse_x, mouse_y)):
@@ -328,10 +320,7 @@ class Interface:
  
         self.window.blit(text_grid_size, (text_x, text_y))
 
-        image_info = pygame.image.load(str(Path("Images/info.png")))
-        image_info.convert()
-        image_info = pygame.transform.smoothscale(image_info, (25, 25))
-        self.window.blit(image_info, (self.window_width-25-image_info.get_width()/2, 25-image_info.get_height()/2))
+        self.window.blit(self.image_info, (self.window_width-25-self.image_info.get_width()/2, 25-self.image_info.get_height()/2))
 
         cell_size = GRID_SIZE/self.grid.get_n_case_x()
         for ball_case_pos in self.grid.get_l_ball_pos():
@@ -453,4 +442,29 @@ class Interface:
         self.message_insat.set_pos((GRID_POS_X + 195, GRID_POS_Y + GRID_SIZE + 20))
 
         self.message_insat.show(10)
+
+    def solve_grid(self):
+
+        solver = pycryptosat.Solver()
+        cnf_ = cnf.convert_grid_to_cnf(self.grid)
+        name_file = "file"
+        cnf_.write_to_dimacs_file(name_file,self.grid.get_n_case_x(),self.grid.get_n_case_y(), solver)
+        cnf2 = cnf.convert_cnf_to_3sat(cnf_,self.grid)
+        name2 = name_file + "_3_sat"
+        cnf2.write_to_dimacs_file(name2,self.grid.get_n_case_x(),self.grid.get_n_case_y(), solver)
+        sat, sol = solver.solve()
+        if sat == False :
+            self.show_message_insat()
+        else :
+            for l in range(self.grid.get_n_case_x()):
+                for c in range(self.grid.get_n_case_x()):
+                    cell = self.grid[l][c]
+                    if cell.get_type() == 0:
+                                        
+                        b = l*self.grid.get_n_case_x()+c+1
+                        n = (l*self.grid.get_n_case_x()+c+1)+ self.grid.get_n_case_x()**2
+                        if(sol[b] == True):
+                            self.grid.get_l_ball_pos().append((c, l))
+                        elif(sol[n] == True):
+                            self.grid.get_l_marble_pos().append((c, l))
 

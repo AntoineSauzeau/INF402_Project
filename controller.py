@@ -31,6 +31,9 @@ class Controller():
             try:
                 for event in pygame.event.get():
 
+                    if event.type == pygame.QUIT:
+                        self.quit();
+
                     self.interface.event(event);
 
                 self.interface.draw();
