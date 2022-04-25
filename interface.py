@@ -167,7 +167,7 @@ class Interface:
                     elif(bttn.get_text() == "Résoudre"):
                         solver = pycryptosat.Solver()
                         cnf_ = cnf.convert_grid_to_cnf(self.grid)
-                        name_file = input("nom du fichier DIMACS : ")
+                        name_file = "file"
                         cnf_.write_to_dimacs_file(name_file,self.grid.get_n_case_x(),self.grid.get_n_case_y(), solver)
                         cnf2 = cnf.convert_cnf_to_3sat(cnf_,self.grid)
                         name2 = name_file + "_3_sat"
@@ -181,17 +181,14 @@ class Interface:
                                     cell = self.grid[l][c]
                                     if cell.get_type() == 0:
     
-                                        center = (GRID_POS_X+c+GRID_SIZE/2/self.grid.get_n_case_x(),GRID_POS_Y+l+GRID_SIZE/2/self.grid.get_n_case_x())
+                                        
                                         b = l*self.grid.get_n_case_x()+c+1
                                         n = (l*self.grid.get_n_case_x()+c+1)+ self.grid.get_n_case_x()**2
-                                        print(b,n, sol[b],sol[n])
                                         if(sol[b] == True):
-                                            print("in")
-                                            self.grid.get_l_ball_pos().append((l, c))
+                                            self.grid.get_l_ball_pos().append((c, l))
                                         elif(sol[n] == True):
-                                            self.grid.get_l_marble_pos().append((l, c))
+                                            self.grid.get_l_marble_pos().append((c, l))
 
-                        print(self.grid.get_l_ball_pos())
                                         
                                 
                                 
