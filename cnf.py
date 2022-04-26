@@ -204,6 +204,7 @@ def convert_cnf_to_3sat(cnf,grid):
     cnf2 = Cnf()
     liste_clauses2 = cnf2.get_l_clause()
     nb_variables = grid.get_n_case_x()*grid.get_n_case_y()*2
+    y = nb_variables
     liste_clauses = cnf.get_l_clause()
     for clause in liste_clauses :
         # un littéral x dans la clause : 
@@ -215,10 +216,10 @@ def convert_cnf_to_3sat(cnf,grid):
             c3 = Clause()
             c4 = Clause()
             l = str(clause.get_l_literal()[0])
-            lit1 = str(Literal(nb_variables+1,False)) 
-            lit1n = str(Literal(nb_variables+1,True))
-            lit2 = str(Literal(nb_variables+2,False))
-            lit2n = str(Literal(nb_variables+2,True))
+            lit1 = str(Literal(y+1,False)) 
+            lit1n = str(Literal(y+1,True))
+            lit2 = str(Literal(y+2,False))
+            lit2n = str(Literal(y+2,True))
             c1+= l
             c1+= lit1
             c1+= lit2
@@ -235,7 +236,7 @@ def convert_cnf_to_3sat(cnf,grid):
             cnf2 += c2
             cnf2 += c3
             cnf2 += c4     
-                   
+            y+=2
         # deux littéraux x et y dans la clause : 
         # nouvelles clauses = {x+y+z; x+y+!z} 
         # où z est une nouvelle variable.
@@ -244,8 +245,8 @@ def convert_cnf_to_3sat(cnf,grid):
             c2 = Clause()
             l1 = str(clause.get_l_literal()[0])
             l2 = str(clause.get_l_literal()[1])
-            lit1 = str(Literal(nb_variables+1,False))
-            lit1n = str(Literal(nb_variables+1,True))
+            lit1 = str(Literal(y+1,False))
+            lit1n = str(Literal(y+1,True))
             c1+= l1
             c1+= lit1
             c1+= l2
@@ -254,6 +255,7 @@ def convert_cnf_to_3sat(cnf,grid):
             c2+= l2
             cnf2 += c1
             cnf2 += c2
+            y+=1
         # plus de 3 littéraux dans la clause (k littéraux) : 
         # nouvelles clauses = {x1+x2+y1; !y1+x3+y2; !y2+x4+y3; !y3+x5+y4; ...; !y(k−3)+x(k−1)+x(k)} 
         # où y sont les nouvelles variables.
@@ -261,29 +263,31 @@ def convert_cnf_to_3sat(cnf,grid):
             c1 = Clause()
             l1 = str(clause.get_l_literal()[0])
             l2 = str(clause.get_l_literal()[1])
-            lit1 = str(Literal(nb_variables+1,False))
+            lit1 = str(Literal(y+1,False))
             c1+=l1
             c1+=l2
             c1+=lit1
             cnf2+=c1
+            y+=1
             for i in range(1,len(clause)-3):
                 c = Clause()
-                lit1 = str(Literal(nb_variables+i,True))
-                lit2 = str(Literal(nb_variables+i+1,False))
+                lit1 = str(Literal(y,True))
+                lit2 = str(Literal(y+1,False))
                 l2 = str(clause.get_l_literal()[i+1])
                 c += l2
                 c += lit1
                 c += lit2 
                 cnf2+=c
+                y+=1
             c2 = Clause()
             l1 = str(clause.get_l_literal()[len(clause)-2])
             l2 = str(clause.get_l_literal()[len(clause)-1])
-            lit1 = str(Literal(nb_variables+len(clause)-2,True))
+            lit1 = str(Literal(y+1,True))
             c2+=l1
             c2+=l2
             c2+=lit1
             cnf2+=c2
-            
+            y+=1
         else :
             cnf2 += clause
             
