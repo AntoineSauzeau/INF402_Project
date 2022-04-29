@@ -10,6 +10,7 @@ from text_switch_widget import TextSwitchWidget
 from message import Message, Alignment
 import cnf
 import webbrowser
+from menu import Menu
 
 GRID_POS_X = 280
 GRID_POS_Y = 50
@@ -17,10 +18,15 @@ GRID_POS_Y = 50
 class Interface:
 
     l_button = []
+    l_menu_button = []
     l_tsw = []
     l_msg = []
-    window_width=675
-    window_height=450
+    window_width=895
+    window_height=670
+    menu_width = 300
+    menu_height = 300
+
+    menu_displayed = False
     
     l_cell_selected = []
     select_mode = False
@@ -34,9 +40,13 @@ class Interface:
         self.controller = controller
         self.grid = Grid(GRID_POS_X, GRID_POS_Y)
 
+        self.menu_x = self.window_width/2 - self.menu_width/2
+        self.menu_y = self.window_height/2 - self.menu_height/2
+
         self.create_buttons()
         self.create_tsw()
         self.create_messages()
+        self.create_menu()
 
         self.load_images()
 
@@ -82,20 +92,51 @@ class Interface:
         self.bttn_random.set_border_color((0, 224, 73))
         self.bttn_random.set_border_thickness(3)
 
-        self.create_area = Button("Créer la région")
-        self.create_area.set_color(BLACK)
-        self.create_area.set_background_color(WHITE)
-        self.create_area.set_padding(10)
-        self.create_area.set_text_size(24)
-        self.create_area.set_border(True)
-        self.create_area.set_border_color((0, 224, 73))
-        self.create_area.set_border_thickness(3)
+        self.bttn_create_area = Button("Créer la région")
+        self.bttn_create_area.set_color(BLACK)
+        self.bttn_create_area.set_background_color(WHITE)
+        self.bttn_create_area.set_padding(10)
+        self.bttn_create_area.set_text_size(24)
+        self.bttn_create_area.set_border(True)
+        self.bttn_create_area.set_border_color((0, 224, 73))
+        self.bttn_create_area.set_border_thickness(3)
 
         self.l_button.append(self.bttn_resolve)
         self.l_button.append(self.bttn_reset)
         self.l_button.append(self.bttn_random)
         self.l_button.append(self.bttn_apply)
-        self.l_button.append(self.create_area)
+        self.l_button.append(self.bttn_create_area)
+
+        self.bttn_save_grid = Button("Sauvegarder la grille")
+        self.bttn_save_grid.set_color(BLACK)
+        self.bttn_save_grid.set_background_color(WHITE)
+        self.bttn_save_grid.set_padding(10)
+        self.bttn_save_grid.set_text_size(24)
+        self.bttn_save_grid.set_border(True)
+        self.bttn_save_grid.set_border_color((0, 224, 73))
+        self.bttn_save_grid.set_border_thickness(3)
+
+        self.bttn_load_grid = Button("Charger une grille")
+        self.bttn_load_grid.set_color(BLACK)
+        self.bttn_load_grid.set_background_color(WHITE)
+        self.bttn_load_grid.set_padding(10)
+        self.bttn_load_grid.set_text_size(24)
+        self.bttn_load_grid.set_border(True)
+        self.bttn_load_grid.set_border_color((0, 224, 73))
+        self.bttn_load_grid.set_border_thickness(3)
+
+        bttn_save_grid_x = self.menu_x + self.menu_width/2
+        bttn_save_grid_y = self.menu_y + 150
+        self.bttn_save_grid.set_pos((bttn_save_grid_x, bttn_save_grid_y))
+
+        bttn_load_grid_x = self.menu_x + self.menu_width/2
+        bttn_load_grid_y = self.menu_y + 200
+        self.bttn_load_grid.set_pos((bttn_load_grid_x, bttn_load_grid_y))
+
+        print(self.bttn_save_grid.pos)
+
+        self.l_menu_button.append(self.bttn_save_grid)
+        self.l_menu_button.append(self.bttn_load_grid)
 
     def create_tsw(self):
         
@@ -125,13 +166,61 @@ class Interface:
         self.image_info.convert()
         self.image_info = pygame.transform.smoothscale(self.image_info, (25, 25))
 
+        self.image_open_menu = pygame.image.load(str(Path("Images/reglage.png")))
+        self.image_open_menu.convert()
+        self.image_open_menu = pygame.transform.smoothscale(self.image_open_menu, (30, 30))
+
+        self.image_close_menu = pygame.image.load(str(Path("Images/cross.png")))
+        self.image_close_menu.convert()
+        self.image_close_menu = pygame.transform.smoothscale(self.image_close_menu, (20, 20))
+
+    def create_menu(self):
+
+        self.menu = Menu("Options")
+        self.menu.load_font(str(Path("Fonts/Roboto-Regular.ttf")))
+        self.menu.set_x(GRID_POS_X/2)
+
 
     def event(self, e):
         
+        #Gestion des events quand le menu est ouvert
+        if(e.type == pygame.MOUSEBUTTONUP and self.menu_displayed):
+
+            mouse_x = e.pos[0]
+            mouse_y = e.pos[1]
+
+            image_close_menu_x = self.menu_x + self.menu_width - self.image_close_menu.get_size()[0]/2 - 20
+            image_close_menu_y = self.menu_y + 20 - self.image_close_menu.get_size()[1]/2
+
+            if mouse_x >= image_close_menu_x and mouse_x <= image_close_menu_x + self.image_close_menu.get_width():
+                if mouse_y >= image_close_menu_y and mouse_y <= image_close_menu_y + self.image_close_menu.get_height():
+                    self.menu_displayed = False
+
+            for bttn in self.l_button:
+
+                if bttn.in_bounds(mouse_x, mouse_y):
+
+                    if(bttn.get_text() == "Sauvegarder la grille"):
+                        pass
+                    elif(bttn.get_text() == "Charger une grille"):
+                        pass
+
+
+        if(self.menu_displayed):
+            return
+
+
         if(e.type == pygame.MOUSEBUTTONUP):
 
             mouse_x = e.pos[0]
             mouse_y = e.pos[1]
+
+            image_open_menu_x = 25 - self.image_open_menu.get_width()/2
+            image_open_menu_y = 25 - self.image_open_menu.get_height()/2
+
+            if mouse_x >= image_open_menu_x and mouse_x <= image_open_menu_x + self.image_open_menu.get_width():
+                if mouse_y >= image_open_menu_y and mouse_y <= image_open_menu_y + self.image_open_menu.get_height():
+                    self.menu_displayed = True
 
             image_info_x = self.window_width-25-self.image_info.get_width()/2
             image_info_y = 25-self.image_info.get_height()/2
@@ -321,6 +410,7 @@ class Interface:
         self.window.blit(text_grid_size, (text_x, text_y))
 
         self.window.blit(self.image_info, (self.window_width-25-self.image_info.get_width()/2, 25-self.image_info.get_height()/2))
+        self.window.blit(self.image_open_menu, (25 - self.image_open_menu.get_width()/2, 25 - self.image_open_menu.get_height()/2))
 
         cell_size = GRID_SIZE/self.grid.get_n_case_x()
         for ball_case_pos in self.grid.get_l_ball_pos():
@@ -351,6 +441,9 @@ class Interface:
         for msg in self.l_msg:
             if msg.is_visible():
                 msg.draw(self.window)
+
+        if(self.menu_displayed):
+            self.draw_menu()
 
         pygame.display.flip()
 
@@ -393,6 +486,29 @@ class Interface:
                 right_border_rect = (rect_cell[0] + (GRID_SIZE/self.grid.get_n_case_x()) - 1, rect_cell[1], 1, (GRID_SIZE/self.grid.get_n_case_x()))
                 pygame.draw.rect(self.window, GREY, right_border_rect, width=0)
 
+    def draw_menu(self):
+        
+        menu_rect = (self.menu_x, self.menu_y, self.menu_width, self.menu_height)
+
+        pygame.draw.rect(self.window, WHITE, menu_rect)
+        pygame.draw.rect(self.window, BLACK, menu_rect, width=3)
+
+        font = pygame.font.Font(str(Path("Fonts/Roboto-Medium.ttf")), 28)
+        text_menu_title = font.render("Menu", True, BLACK)
+        text_x = self.menu_x + self.menu_width/2 - text_menu_title.get_size()[0]/2
+        text_y = self.menu_y + 20
+
+        self.window.blit(text_menu_title, (text_x, text_y))
+
+        image_close_menu_x = self.menu_x + self.menu_width - self.image_close_menu.get_size()[0]/2 - 20
+        image_close_menu_y = self.menu_y + 20 - self.image_close_menu.get_size()[1]/2
+
+        self.window.blit(self.image_close_menu, (image_close_menu_x, image_close_menu_y))
+
+        for bttn in self.l_menu_button:
+            bttn.draw(self.window)
+
+
     def get_size(self):
 
         frame_1_width = 210
@@ -408,7 +524,7 @@ class Interface:
 
     def update_widget_pos(self):
         self.bttn_resolve.set_pos((GRID_POS_X + GRID_SIZE, GRID_POS_Y + GRID_SIZE + 40))
-        self.create_area.set_pos((GRID_POS_X + 30, GRID_POS_Y + GRID_SIZE + 40))
+        self.bttn_create_area.set_pos((GRID_POS_X + 30, GRID_POS_Y + GRID_SIZE + 40))
 
         self.bttn_reset.set_pos((100, self.window_height - 40))
         self.bttn_random.set_pos((100, self.window_height - 90))
