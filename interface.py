@@ -1,6 +1,6 @@
 from enum import Enum
 from select import select
-from grid import Grid, GRID_SIZE
+from grid import Grid, GRID_SIZE, save_grid_to_file, load_grid_from_file
 from color import *
 import pygame
 import pycryptosat
@@ -10,6 +10,8 @@ from text_switch_widget import TextSwitchWidget
 from message import Message, Alignment
 import cnf
 import webbrowser
+import tkinter as tk
+from tkinter import filedialog
 
 GRID_POS_X = 280
 GRID_POS_Y = 50
@@ -188,16 +190,19 @@ class Interface:
                 if mouse_y >= image_close_menu_y and mouse_y <= image_close_menu_y + self.image_close_menu.get_height():
                     self.menu_displayed = False
 
-            for bttn in self.l_button:
+            for bttn in self.l_menu_button:
 
                 if bttn.in_bounds(mouse_x, mouse_y):
 
                     if(bttn.get_text() == "Sauvegarder la grille"):
-                        pass
+                        filepath = self.get_filepath_from_popup()
+                        save_grid_to_file(self.grid, filepath)
+                        print(self.grid)
                     elif(bttn.get_text() == "Charger une grille"):
-                        pass
+                        filepath = self.get_filepath_from_popup()
+                        self.grid = load_grid_from_file(filepath)
 
-
+        #Si le menu est ouvert on évite de traiter les évênements sur le reste de la fenêtre
         if(self.menu_displayed):
             return
 
@@ -575,4 +580,13 @@ class Interface:
                             self.grid.get_l_ball_pos().append((c, l))
                         elif(sol[n] == True):
                             self.grid.get_l_marble_pos().append((c, l))
+
+    def get_filepath_from_popup(self):
+
+        root = tk.Tk()
+        root.withdraw()
+
+        file_path = filedialog.askopenfilename()
+
+        return file_path
 

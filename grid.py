@@ -1,6 +1,9 @@
 from cell import Cell
 from graph import Graph, Vertex
 import interface
+from pickle import Pickler, Unpickler
+from pathlib import Path
+import os
 
 
 MAX_GRID_SIZE=30
@@ -146,7 +149,7 @@ class Grid:
 
         return l_cell_by_area
 
-    def get_black_cell(self):
+    def get_black_cells(self):
         l_cell = []
 
         for l in range(self.n_case_y):
@@ -188,3 +191,19 @@ class Grid:
 
     def __setitem__(self, index, value):
         self.grid[index] = value
+
+
+
+
+def save_grid_to_file(grid_object, filepath):
+        file = open(str(Path(filepath)), "wb")
+        Pickler(file).dump(grid_object)
+
+def load_grid_from_file(filepath):
+
+    #Si le fichier est vide, inutile d'essayer de le charger
+    if(os.path.getsize(filepath) == 0):
+         return
+
+    file = open(str(Path(filepath)), "rb")
+    return Unpickler(file).load()
