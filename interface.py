@@ -195,7 +195,7 @@ class Interface:
                     if(bttn.get_text() == "Sauvegarder la grille"):
                         save_grid_to_file(self.grid)
                     elif(bttn.get_text() == "Charger une grille"):
-                        
+
                         grid_object = load_grid_from_file()
                         if(grid_object != None):
                             self.grid = grid_object
@@ -265,7 +265,10 @@ class Interface:
                         self.grid.get_l_marble_pos().clear()
 
                     elif(bttn.get_text() == "Résoudre"):
-                        self.solve_grid()     
+                        self.solve_grid()
+
+                    elif(bttn.get_text() == "Grille aléatoire"):
+                        self.grid.create_random_grid()
                                 
                     
             if(e.button == 1):
@@ -556,6 +559,9 @@ class Interface:
 
     def solve_grid(self):
 
+        if(self.grid.is_empty()):
+            return
+
         solver = pycryptosat.Solver()
         cnf_ = cnf.convert_grid_to_cnf(self.grid)
         name_file = "file"
@@ -570,10 +576,11 @@ class Interface:
             for l in range(self.grid.get_n_case_x()):
                 for c in range(self.grid.get_n_case_x()):
                     cell = self.grid[l][c]
-                    if cell.get_type() == 0:
+                    if cell.get_type() == 0: 
                                         
                         b = l*self.grid.get_n_case_x()+c+1
                         n = (l*self.grid.get_n_case_x()+c+1)+ self.grid.get_n_case_x()**2
+                        print(b, n)
                         if(sol[b] == True):
                             self.grid.get_l_ball_pos().append((c, l))
                         elif(sol[n] == True):
