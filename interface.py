@@ -10,7 +10,6 @@ from text_switch_widget import TextSwitchWidget
 from message import Message, Alignment
 import cnf
 import webbrowser
-from menu import Menu
 
 GRID_POS_X = 280
 GRID_POS_Y = 50
@@ -46,7 +45,6 @@ class Interface:
         self.create_buttons()
         self.create_tsw()
         self.create_messages()
-        self.create_menu()
 
         self.load_images()
 
@@ -173,12 +171,6 @@ class Interface:
         self.image_close_menu = pygame.image.load(str(Path("Images/cross.png")))
         self.image_close_menu.convert()
         self.image_close_menu = pygame.transform.smoothscale(self.image_close_menu, (20, 20))
-
-    def create_menu(self):
-
-        self.menu = Menu("Options")
-        self.menu.load_font(str(Path("Fonts/Roboto-Regular.ttf")))
-        self.menu.set_x(GRID_POS_X/2)
 
 
     def event(self, e):
