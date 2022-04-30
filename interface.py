@@ -10,8 +10,6 @@ from text_switch_widget import TextSwitchWidget
 from message import Message, Alignment
 import cnf
 import webbrowser
-import tkinter as tk
-from tkinter import filedialog
 
 GRID_POS_X = 280
 GRID_POS_Y = 50
@@ -195,12 +193,12 @@ class Interface:
                 if bttn.in_bounds(mouse_x, mouse_y):
 
                     if(bttn.get_text() == "Sauvegarder la grille"):
-                        filepath = self.get_filepath_from_popup()
-                        save_grid_to_file(self.grid, filepath)
-                        print(self.grid)
+                        save_grid_to_file(self.grid)
                     elif(bttn.get_text() == "Charger une grille"):
-                        filepath = self.get_filepath_from_popup()
-                        self.grid = load_grid_from_file(filepath)
+                        
+                        grid_object = load_grid_from_file()
+                        if(grid_object != None):
+                            self.grid = grid_object
 
         #Si le menu est ouvert on évite de traiter les évênements sur le reste de la fenêtre
         if(self.menu_displayed):
@@ -581,12 +579,4 @@ class Interface:
                         elif(sol[n] == True):
                             self.grid.get_l_marble_pos().append((c, l))
 
-    def get_filepath_from_popup(self):
-
-        root = tk.Tk()
-        root.withdraw()
-
-        file_path = filedialog.askopenfilename()
-
-        return file_path
 

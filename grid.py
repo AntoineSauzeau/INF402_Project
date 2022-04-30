@@ -4,6 +4,8 @@ import interface
 from pickle import Pickler, Unpickler
 from pathlib import Path
 import os
+import tkinter as tk
+from tkinter import filedialog
 
 
 MAX_GRID_SIZE=30
@@ -195,15 +197,40 @@ class Grid:
 
 
 
-def save_grid_to_file(grid_object, filepath):
+def save_grid_to_file(grid_object):
+
+    root = tk.Tk()
+    root.withdraw()
+
+    filepath = filedialog.asksaveasfilename(initialdir=str(Path("./Grids/")))
+
+    try:
         file = open(str(Path(filepath)), "wb")
+    except Exception as e:
+        print(e)
+    else:
         Pickler(file).dump(grid_object)
+        file.close()
 
-def load_grid_from_file(filepath):
+def load_grid_from_file():
 
-    #Si le fichier est vide, inutile d'essayer de le charger
-    if(os.path.getsize(filepath) == 0):
-         return
+    root = tk.Tk()
+    root.withdraw()
 
-    file = open(str(Path(filepath)), "rb")
-    return Unpickler(file).load()
+    filepath = filedialog.askopenfilename(initialdir=str(Path("./Grids/")))
+
+    try:
+        file = open(str(Path(filepath)), "rb")
+        #Si le fichier est vide, inutile d'essayer de le charger
+        if(os.path.getsize(filepath) == 0):
+            return
+    except Exception as e:
+        print(e)
+    else:
+        grid_object = Unpickler(file).load()
+
+        grid_object.l_ball_pos.clear()
+        grid_object.l_marble_pos.clear()
+
+        file.close()
+        return grid_object
