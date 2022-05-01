@@ -564,10 +564,37 @@ class Interface:
         cnf_.write_to_dimacs_file(name_file,self.grid.get_n_case_x(),self.grid.get_n_case_y(), solver)
         cnf2 = cnf.convert_cnf_to_3sat(cnf_,self.grid)
         name2 = name_file + "_3_sat"
-        cnf2.write_to_dimacs_file(name2,self.grid.get_n_case_x(),self.grid.get_n_case_y(), solver)
-        sat, sol = solver.solve()
+        #cnf2.write_to_dimacs_file(name2,self.grid.get_n_case_x(),self.grid.get_n_case_y(), solver)
+        #sat, sol = solver.solve()
+        assignations=[]
+        for i in range(1,self.grid.get_n_case_x()**2*2+1):
+            assignations.append((i,False))
+        sat,sol = cnf.dpll(cnf_,assignations)
         if sat == False :
             self.show_message_insat()
+        else :
+            #notre solver
+            sol.sort()
+            """
+            for num, s in sol:
+                c = 
+                l =
+            """
+            for l in range(self.grid.get_n_case_x()):
+                for c in range(self.grid.get_n_case_x()):
+                    cell = self.grid[l][c]
+                    if cell.get_type() == 0:
+                    
+                        b = l*self.grid.get_n_case_x()+c+1
+                        n = (l*self.grid.get_n_case_x()+c+1)+ self.grid.get_n_case_x()**2
+                        numb,sb=sol[b-1]
+                        num,sn=sol[n-1]
+                        if sb :
+                            self.grid.get_l_ball_pos().append((c, l))
+                        if sn :
+                            self.grid.get_l_marble_pos().append((c, l)) 
+        #solver pycryptosat                
+        """
         else :
             for l in range(self.grid.get_n_case_x()):
                 for c in range(self.grid.get_n_case_x()):
@@ -580,7 +607,8 @@ class Interface:
                             self.grid.get_l_ball_pos().append((c, l))
                         elif(sol[n] == True):
                             self.grid.get_l_marble_pos().append((c, l))
-
+        """
+            
     def get_filepath_from_popup(self):
 
         root = tk.Tk()

@@ -5,7 +5,10 @@ class Literal:
     def __init__(self, value, neg):
         self.value = value 
         self.neg = neg
-
+    def get_value(self):
+        return self.value
+    def get_neg(self):
+        return self.neg
     def __str__(self):
         if self.neg == False:
             return str(self.value)
@@ -43,9 +46,19 @@ class Cnf:
     def __iadd__(self, clause):
         self.l_clause.append(clause)
         return self
-
+    def __len__(self):
+        return len(self.l_clause)
     def get_l_clause(self):
         return self.l_clause
+    def get_l_literal(self):
+        l_variable = []
+        for clause in self.l_clause:
+            l_literal = clause.get_l_literal()
+            for literal in l_literal:
+                if str(literal) not in l_variable:
+                    l_variable.append(str(literal))
+
+        return l_variable
 
     def count_variable_number(self):
 
@@ -197,8 +210,29 @@ def convert_grid_to_cnf(grid):
 
     return cnf
 
-def read_cnf_from_dimacs_file():   
-    pass
+def read_cnf_from_dimacs_file(file_name): 
+    try:
+        file = open(file_name, "w")
+    except IOError:
+        print("impossible d'ouvrir le fichier :", file_name)
+        
+    cnf = Cnf()
+    for line in file.readlines():
+        clause_line = line.split() #sépare la ligne en une liste de chaque mot séparé par des  espaces
+        clause = Clause()
+        if len(clause_line) != 0 and clause_line[0] != "p" and clause_line[0] != "c": #c pour les commentaires
+            for literal in clause_line:
+                literal_value = int(literal)
+                if literal_value == 0: #fin de ligne
+                    cnf+=clause
+                else:
+                    # not at the end, then append variable inside the last list!
+                    clause+=literal
+                    
+        elif len(clause_line) != 0 and clause_line[0] == "p":
+             nb_variables = int(clause[2])
+             nb_clauses = int(clause[3])
+    return cnf, num_variables, num_clauses
 
 def convert_cnf_to_3sat(cnf,grid):
     cnf2 = Cnf()
@@ -293,4 +327,108 @@ def convert_cnf_to_3sat(cnf,grid):
             
             
     return cnf2
+    
+def dpll(cnf, assignments):
+    if len(cnf) == 0:
+        return True, assignments
+    clauses = cnf.get_l_clause()
+    for clause in clauses :
+        if len(clause)==0:
+            return False, None
+ 
+    l,f = select_literal(cnf,assignments)
+    n = l.get_neg()
+    v = l.get_value()
+    if f:
+        #print("New cnf with ",v,"=", not n," and clauses : ")
+        new_cnf =  Cnf()
+        for clause in clauses:
+            lit = clause.get_l_literal()
+            add = True
+            c2 = Clause()
+            for literal in lit:
+                if literal.get_value()!=v:
+                    c2+=literal
+                else :
+                    if literal.get_neg()==n:
+                        add = False
+            if add :
+                new_cnf+=c2
+                #print(str(c2))
+        if (v, n) in assignments:
+            assignments.pop(assignments.index((v, n)))
+        if not (v,not n) in assignments :
+            assignments.append((v, not n))
+        #print(assignments)
+        sat, vals = dpll(new_cnf, assignments)    
+        if sat:
+            return sat, vals
+        
+        return False, None
+        
+    
+    new_cnf =  Cnf()
+    #print("New cnf with ",v,"=", not n," and clauses : ")
+    for clause in clauses:
+        lit = clause.get_l_literal()
+        add = True
+        c2 = Clause()
+        for literal in lit:
+            if literal.get_value()!=v:
+                c2+=literal
+            else :
+                if literal.get_neg()==n:
+                    add = False
+        if add :
+            #print(str(c2))
+            new_cnf+=c2
+    if (v, n) in assignments:  
+        assignments.pop(assignments.index((v, n)))
+    if not (v,not n) in assignments :
+        assignments.append((v, not n))
+    #print(assignments)
+    sat, vals = dpll(new_cnf, assignments)
+    if sat:
+        return sat, vals
+    else :
+        #print("On revient sur notre choix de cnf avec ",v," = ", n, " et les clauses :")
+        
+        new_cnf =  Cnf()
+        for clause in clauses:
+            lit = clause.get_l_literal()
+            add = True
+            c2 = Clause()
+            for literal in lit:
+                if literal.get_value()!=v:
+                    c2+=literal
+                else :
+                    if literal.get_neg()!=n:
+                        add = False
+            if add :
+                new_cnf+=c2
+                #print(str(c2))
+        if (v, not n) in assignments:  
+            assignments.pop(assignments.index((v, not n)))
+        if not (v, n) in assignments :
+            assignments.append((v, n))
+        #print(assignments)
+        sat, vals = dpll(new_cnf, assignments)
+        if sat:
+            return sat, vals
+    return False, None
 
+def select_literal(cnf,assignments):
+    clauses = cnf.get_l_clause()
+    for c in clauses:
+        if len(c)==1:
+            return c.get_l_literal()[0], True
+            
+    for c in clauses:
+        lit = c.get_l_literal()
+        for l in lit:
+            v = l.get_value()
+            n = l.get_neg()
+            if not (v,n) in assignments:
+                return l, False
+            
+        
