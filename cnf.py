@@ -28,6 +28,7 @@ class Clause:
 
         return result
 
+    #Surdefinition de l'opérateur +=, permet de rajouter facilement des variables sans devoir récupérer la liste et ensuite utiliser la fonction append
     def __iadd__(self, literal):
         self.l_literal.append(literal)
         return self
@@ -43,6 +44,7 @@ class Cnf:
     def __init__(self):
         self.l_clause = []
 
+    #Surdefinition de l'opérateur +=, permet de rajouter facilement des clauses sans devoir récupérer la liste et ensuite utiliser la fonction append
     def __iadd__(self, clause):
         self.l_clause.append(clause)
         return self
@@ -71,13 +73,14 @@ class Cnf:
 
         return len(l_variable)
 
-
+    #Ecris une cnf dans un fichier en respectant le format dimacs
     def write_to_dimacs_file(self, file_name,x,y,solver):
         try:
             file = open(file_name, "w")
         except IOError:
             print("impossible d'ouvrir le fichier :", file_name)
 
+        #Entête du fichier dimacs
         file.write("p cnf " + str(self.count_variable_number()) + " " + str(len(self.l_clause)) + "\n")
 
         for clause in self.l_clause:
@@ -90,7 +93,7 @@ class Cnf:
 
 
 
-
+#On associe à chaque variable un nombre qui va les définir dans les cnfs au formats dimacs
 def get_literal_index(var, x, y, grid_size):
 
     if(var == "x"):
@@ -98,15 +101,20 @@ def get_literal_index(var, x, y, grid_size):
     elif(var == "y"):
         return grid_size * grid_size + y * grid_size + x + 1
 
+#Convertie la grille créée par l'utilisateur en contraintes pour le placement des billes et des ballons, sous forme de cnf
 def convert_grid_to_cnf(grid):
 
     cnf = Cnf()
+
     l_cell_by_area = grid.get_cell_by_area()
-    print(l_cell_by_area)
     
-    #∀(i, j), ¬(xi,j ∧ yi,j ) ≡ ¬xi,j ∨ ¬yi,j )
+    #On ne peut pas avoir un ballon et une bille sur la même case
     for c in range(grid.get_n_case_x()):
         for l in range(grid.get_n_case_y()):
+
+            if(grid[l][c].get_area() == -1):
+                continue
+
             lit_1 = Literal(get_literal_index("x", c, l, grid.get_n_case_x()), True)
             lit_2 = Literal(get_literal_index("y", c, l, grid.get_n_case_x()), True)
 
@@ -135,6 +143,7 @@ def convert_grid_to_cnf(grid):
     #Il y a au plus une bille et un ballon par région
     for area in l_cell_by_area.keys():
 
+        #Pour chaque celulle on s'assure que si il y a une bille ou un ballon dessus, alors il ne peut pas en avoir également dans les autres cases de la région
         for cell_1 in l_cell_by_area[area]:
             for cell_2 in l_cell_by_area[area]:
 
@@ -163,18 +172,24 @@ def convert_grid_to_cnf(grid):
         for l in range(grid.get_n_case_y()):
 
             cell = grid[l][c]
+            if(cell.get_area() == -1):
+                continue
 
             if cell.get_type() == 0 and l != 0:
 
                 for i in range(1, l+1):
 
+                    #Si il y a une case noir en dessous du ballon c'est good
                     cell_2 = grid[l-i][c]
-
                     if cell_2.get_type() == 1:
                         break 
 
+                    if(grid[l-i][c].get_area() == -1):
+                        continue
+
                     clause = Clause()
 
+                    #Sinon si c'est pas le cas, il faut qu'il ait un autre ballon sous lui
                     lit_1 = Literal(get_literal_index("x", c, l, grid.get_n_case_x()), True)
                     lit_2 = Literal(get_literal_index("x", c, l-i, grid.get_n_case_x()), False)
             
@@ -182,21 +197,27 @@ def convert_grid_to_cnf(grid):
                     clause += lit_2
             
                     cnf += clause
+                        
+
 
     #regle sur le placement des billes
     for c in range(grid.get_n_case_x()):
         for l in range(grid.get_n_case_y()):
 
             cell = grid[l][c]
+            if(cell.get_area() == -1):
+                continue
 
             if cell.get_type() == 0 and l != grid.get_n_case_y()-1:
     
                 for i in range(1, grid.get_n_case_y()-l):
 
                     cell_2 = grid[l+i][c]
-
                     if cell_2.get_type() == 1:
                         break
+
+                    if(grid[l+i][c].get_area() == -1):
+                        continue
 
                     clause = Clause()
 

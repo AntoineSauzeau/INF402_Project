@@ -10,8 +10,6 @@ from text_switch_widget import TextSwitchWidget
 from message import Message, Alignment
 import cnf
 import webbrowser
-import tkinter as tk
-from tkinter import filedialog
 
 GRID_POS_X = 280
 GRID_POS_Y = 50
@@ -50,6 +48,7 @@ class Interface:
 
         self.load_images()
 
+    #On crée tous les boutons et leur ajoute leurs caractéristiques pour avoir simplement à les dessiner ensuite
     def create_buttons(self):
 
         self.bttn_resolve = Button("Résoudre")
@@ -107,6 +106,9 @@ class Interface:
         self.l_button.append(self.bttn_apply)
         self.l_button.append(self.bttn_create_area)
 
+
+        #Boutons du menu
+
         self.bttn_save_grid = Button("Sauvegarder la grille")
         self.bttn_save_grid.set_color(BLACK)
         self.bttn_save_grid.set_background_color(WHITE)
@@ -133,8 +135,7 @@ class Interface:
         bttn_load_grid_y = self.menu_y + 200
         self.bttn_load_grid.set_pos((bttn_load_grid_x, bttn_load_grid_y))
 
-        print(self.bttn_save_grid.pos)
-
+        #On met les boutons du menu dans une autre liste pour pouvoir traiter les évênements et les dessiner seulement quand le menu est ouvert
         self.l_menu_button.append(self.bttn_save_grid)
         self.l_menu_button.append(self.bttn_load_grid)
 
@@ -160,6 +161,7 @@ class Interface:
         self.l_msg.append(self.message_bad_selection)
         self.l_msg.append(self.message_insat)
 
+    #Charge les images et applique des traitements dessus
     def load_images(self):
 
         self.image_info = pygame.image.load(str(Path("Images/info.png")))
@@ -175,14 +177,16 @@ class Interface:
         self.image_close_menu = pygame.transform.smoothscale(self.image_close_menu, (20, 20))
 
 
+    #Traite les évênements de la fenêtre
     def event(self, e):
         
-        #Gestion des events quand le menu est ouvert
+        #Gestion des évênements du menu, s'il est ouvert
         if(e.type == pygame.MOUSEBUTTONUP and self.menu_displayed):
 
             mouse_x = e.pos[0]
             mouse_y = e.pos[1]
 
+            #On ferme le menu si l'utilisateur a cliqué sur la croix
             image_close_menu_x = self.menu_x + self.menu_width - self.image_close_menu.get_size()[0]/2 - 20
             image_close_menu_y = self.menu_y + 20 - self.image_close_menu.get_size()[1]/2
 
@@ -195,12 +199,12 @@ class Interface:
                 if bttn.in_bounds(mouse_x, mouse_y):
 
                     if(bttn.get_text() == "Sauvegarder la grille"):
-                        filepath = self.get_filepath_from_popup()
-                        save_grid_to_file(self.grid, filepath)
-                        print(self.grid)
+                        save_grid_to_file(self.grid)
                     elif(bttn.get_text() == "Charger une grille"):
-                        filepath = self.get_filepath_from_popup()
-                        self.grid = load_grid_from_file(filepath)
+
+                        grid_object = load_grid_from_file()
+                        if(grid_object != None):
+                            self.grid = grid_object
 
         #Si le menu est ouvert on évite de traiter les évênements sur le reste de la fenêtre
         if(self.menu_displayed):
@@ -212,6 +216,7 @@ class Interface:
             mouse_x = e.pos[0]
             mouse_y = e.pos[1]
 
+            #On regarde si l'utilisateur a cliqué sur la roue dentée permettant d'ouvrir le menu
             image_open_menu_x = 25 - self.image_open_menu.get_width()/2
             image_open_menu_y = 25 - self.image_open_menu.get_height()/2
 
@@ -219,6 +224,7 @@ class Interface:
                 if mouse_y >= image_open_menu_y and mouse_y <= image_open_menu_y + self.image_open_menu.get_height():
                     self.menu_displayed = True
 
+            #On regarde si l'utilisateur a cliqué sur l'image en haut à droite permettant d'ouvrir une page web expliquant les règles du Dosun Fuwari
             image_info_x = self.window_width-25-self.image_info.get_width()/2
             image_info_y = 25-self.image_info.get_height()/2
 
@@ -226,6 +232,7 @@ class Interface:
                 if mouse_y >= image_info_y and mouse_y <= image_info_y + self.image_info.get_height():
                     webbrowser.open('http://www.cross-plus-a.com/fr/html/cros7dsfw.htm', new=2)
 
+            #On regarde si l'utilisateur a cliqué sur un des deux flèches permettant de changer la chaine de caractère sélectionnée , et on traite si c'est le cas
             for tsw in self.l_tsw:
 
                 if(tsw.in_arrow_left_bounds(mouse_x, mouse_y)):
@@ -233,6 +240,7 @@ class Interface:
                 elif(tsw.in_arrow_right_bounds(mouse_x, mouse_y)):
                     tsw.next()
 
+            #On regarde si l'utilisateur a cliqué sur un des boutons de l'interface, hors menu, et on traite si c'est le cas
             for bttn in self.l_button:
 
                 if bttn.in_bounds(mouse_x, mouse_y):
@@ -267,15 +275,18 @@ class Interface:
                         self.grid.get_l_marble_pos().clear()
 
                     elif(bttn.get_text() == "Résoudre"):
-                        self.solve_grid()     
+                        self.solve_grid()
+
+                    elif(bttn.get_text() == "Grille aléatoire"):
+                        self.grid.create_random_grid()
                                 
                     
-            if(e.button == 1):
+            if(e.button == 1):      #L'utilisateur a fait un click gauche ?
                 if(self.select_mode):
                     print(self.grid.is_cell_seq_linked(self.l_cell_selected))
                 self.select_mode=False
 
-            elif(e.button == 2):
+            elif(e.button == 2):    #L'utilisateur a fait un click molette  ?
 
                 cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y,self.grid.get_n_case_x())
                 if(cell.get_type() == 0):
@@ -298,7 +309,7 @@ class Interface:
                 if(self.grid.is_in_grid(mouse_x, mouse_y)):
                     self.message_bad_selection.hide()
 
-            if(e.button == 1):   #Left click
+            if(e.button == 1):   #L'utilisateur a fait un click gauche ?
                 if(self.grid.is_in_grid(mouse_x, mouse_y)):
 
                     self.select_mode = True
@@ -308,7 +319,7 @@ class Interface:
                         self.l_cell_selected.append(cell)
                         cell.set_is_selected(True)
 
-            elif(e.button == 3):    #Right click
+            elif(e.button == 3):    #L'utilisateur a fait un click droit ?
                 if(self.grid.is_in_grid(mouse_x, mouse_y)):
 
                     self.remove_mode = True
@@ -323,6 +334,7 @@ class Interface:
             mouse_x = e.pos[0]
             mouse_y = e.pos[1]
 
+            #Si l'utilisateur a gardé le click gauche appuyé et qu'il bouge sur la grille, on sélectionne les cases traversées
             if(self.grid.is_in_grid(mouse_x, mouse_y) and self.select_mode == True):
 
                 cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y,self.grid.get_n_case_x())
@@ -330,6 +342,7 @@ class Interface:
                     self.l_cell_selected.append(cell)
                     cell.set_is_selected(True)
 
+            #Si l'utilisateur a gardé le click droit appuyé et qu'il bouge sur la grille, on dé-sélectionne les cases traversées
             elif(self.grid.is_in_grid(mouse_x, mouse_y) and self.remove_mode == True):
 
                 cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y,self.grid.get_n_case_y())
@@ -338,7 +351,7 @@ class Interface:
                     cell.set_is_selected(False)
 
 
-
+    #On dessines sur la fenêtre
     def draw(self):
 
         if(self.get_size()[0] != self.window_width or self.get_size()[1] != self.window_height):
@@ -424,24 +437,30 @@ class Interface:
 
             pygame.draw.circle(self.window, BLACK, (marble_x, marble_y), cell_size/4)
 
+        #On dessine les boutons sur la fenêtre
         for button in self.l_button:
 
+            #On affiche le bouton "Créer la région" seulement si l'utilisateur a sélectionné une région
             if button.get_text() == "Créer la région":
                 if len(self.l_cell_selected) != 0:
                     button.draw(self.window)
             else:
                 button.draw(self.window)
 
+        #On dessine les objets graphiques permettant de choisir une chaine de caractère à l'aide de 2 flèches 
         for tsw in self.l_tsw:
             tsw.draw(self.window)
 
+        #On dessines les messages à destination de l'utilisateur
         for msg in self.l_msg:
             if msg.is_visible():
                 msg.draw(self.window)
 
+        #On dessine le menu si l'utilisateur l'a ouvert
         if(self.menu_displayed):
             self.draw_menu()
 
+        #On actualise la fenêtre avec tout ce qu'on a dessiné précédemment
         pygame.display.flip()
 
     def draw_cell_borders(self, cell, rect_cell):
@@ -483,10 +502,12 @@ class Interface:
                 right_border_rect = (rect_cell[0] + (GRID_SIZE/self.grid.get_n_case_x()) - 1, rect_cell[1], 1, (GRID_SIZE/self.grid.get_n_case_x()))
                 pygame.draw.rect(self.window, GREY, right_border_rect, width=0)
 
+    #Dessine le menu sur la fenêtre. Il peut être ouvert en cliquant sur la roue dentée en haut à gauche de l'écran
     def draw_menu(self):
         
         menu_rect = (self.menu_x, self.menu_y, self.menu_width, self.menu_height)
 
+        #On dessine les bordures et le fond du menu
         pygame.draw.rect(self.window, WHITE, menu_rect)
         pygame.draw.rect(self.window, BLACK, menu_rect, width=3)
 
@@ -497,11 +518,13 @@ class Interface:
 
         self.window.blit(text_menu_title, (text_x, text_y))
 
+        #On dessine la croix pour que l'utilisateur puisse fermer le menu
         image_close_menu_x = self.menu_x + self.menu_width - self.image_close_menu.get_size()[0]/2 - 20
         image_close_menu_y = self.menu_y + 20 - self.image_close_menu.get_size()[1]/2
 
         self.window.blit(self.image_close_menu, (image_close_menu_x, image_close_menu_y))
 
+        #On dessine les boutons du menus
         for bttn in self.l_menu_button:
             bttn.draw(self.window)
 
@@ -558,6 +581,9 @@ class Interface:
 
     def solve_grid(self):
 
+        if(self.grid.is_empty()):
+            return
+
         solver = pycryptosat.Solver()
         cnf_ = cnf.convert_grid_to_cnf(self.grid)
         name_file = "file"
@@ -599,10 +625,11 @@ class Interface:
             for l in range(self.grid.get_n_case_x()):
                 for c in range(self.grid.get_n_case_x()):
                     cell = self.grid[l][c]
-                    if cell.get_type() == 0:
+                    if cell.get_type() == 0: 
                                         
                         b = l*self.grid.get_n_case_x()+c+1
                         n = (l*self.grid.get_n_case_x()+c+1)+ self.grid.get_n_case_x()**2
+                        print(b, n)
                         if(sol[b] == True):
                             self.grid.get_l_ball_pos().append((c, l))
                         elif(sol[n] == True):

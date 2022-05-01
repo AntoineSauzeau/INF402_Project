@@ -4,7 +4,10 @@ import interface
 from pickle import Pickler, Unpickler
 from pathlib import Path
 import os
-
+import tkinter as tk
+from tkinter import filedialog
+import random
+import time
 
 MAX_GRID_SIZE=30
 GRID_SIZE = 540 #pixels
@@ -161,11 +164,77 @@ class Grid:
 
         return l_cell
 
+    def get_smallest_neighbour_area(self, cell):
+
+        l_neighbour = self.get_cell_neighbours(cell)
+        cell_by_area = self.get_cell_by_area()
+
+
+        smallest_area = -1
+        smallest_area_size = 1000000000000
+        for neighbour in l_neighbour:
+
+            area = neighbour.get_area()
+            if(area == -1):
+                continue
+
+            if len(cell_by_area[str(area)]) < smallest_area_size:
+                smallest_area_size = len(cell_by_area[str(area)])
+                smallest_area = area
+
+        if(smallest_area == -1):
+            return None
+        else:
+            return smallest_area
+
     def reset(self):
 
         for l in range(MAX_GRID_SIZE):
             for c in range(MAX_GRID_SIZE):
                 self.grid[l][c].reset()
+
+        self.l_marble_pos.clear()
+        self.l_ball_pos.clear()
+
+    def create_random_grid(self):
+
+        random.seed(time.time())
+
+        self.reset()
+        l_pos = []
+        area_index = 0
+
+        for l in range(self.n_case_y):
+            for c in range(self.n_case_x):
+                l_pos.append((l, c))
+
+        while len(l_pos) != 0:
+
+            i = random.randint(0, len(l_pos)-1)
+            pos = l_pos.pop(i)
+            cell = self.grid[pos[0]][pos[1]]
+
+            is_marked = not(random.randint(0, 6))
+            if(is_marked):
+                cell.set_type(1)
+            else:
+                print("a")
+                area = self.get_smallest_neighbour_area(cell)
+                print("b")
+                if area == None:
+                    cell.set_area(area_index)
+                    area_index = area_index + 1
+                else:
+                    cell.set_area(area)
+
+    def is_empty(self):
+
+        l_cell_by_area = self.get_cell_by_area()
+        return len(l_cell_by_area.keys()) == 0
+
+
+        
+
 
     def get_n_case_x(self):
         return self.n_case_x
@@ -192,18 +261,45 @@ class Grid:
     def __setitem__(self, index, value):
         self.grid[index] = value
 
+    
 
 
 
-def save_grid_to_file(grid_object, filepath):
+
+def save_grid_to_file(grid_object):
+
+    root = tk.Tk()
+    root.withdraw()
+
+    filepath = filedialog.asksaveasfilename(initialdir=str(Path("./Grids/")))
+
+    try:
         file = open(str(Path(filepath)), "wb")
+    except Exception as e:
+        print(e)
+    else:
         Pickler(file).dump(grid_object)
+        file.close()
 
-def load_grid_from_file(filepath):
+def load_grid_from_file():
 
-    #Si le fichier est vide, inutile d'essayer de le charger
-    if(os.path.getsize(filepath) == 0):
-         return
+    root = tk.Tk()
+    root.withdraw()
 
-    file = open(str(Path(filepath)), "rb")
-    return Unpickler(file).load()
+    filepath = filedialog.askopenfilename(initialdir=str(Path("./Grids/")))
+
+    try:
+        file = open(str(Path(filepath)), "rb")
+        #Si le fichier est vide, inutile d'essayer de le charger
+        if(os.path.getsize(filepath) == 0):
+            return
+    except Exception as e:
+        print(e)
+    else:
+        grid_object = Unpickler(file).load()
+
+        grid_object.l_ball_pos.clear()
+        grid_object.l_marble_pos.clear()
+
+        file.close()
+        return grid_object
