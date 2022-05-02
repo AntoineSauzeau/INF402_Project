@@ -74,7 +74,7 @@ class Cnf:
         return len(l_variable)
 
     #Ecris une cnf dans un fichier en respectant le format dimacs
-    def write_to_dimacs_file(self, file_name,x,y,solver):
+    def write_to_dimacs_file(self, file_name,x,y):
         try:
             file = open(file_name, "w")
         except IOError:
@@ -85,6 +85,11 @@ class Cnf:
 
         for clause in self.l_clause:
             file.write(str(clause) + "0\n")
+
+
+    def add_clauses_to_pycryptosat_solver(self, solver):
+
+        for clause in self.l_clause:
             l = clause.get_l_literal()
             l2 = []
             for lit in l:

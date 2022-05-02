@@ -118,7 +118,7 @@ class TextSwitchWidget:
 
     #GETTERS/SETTERS
     def set_text_size(self, text_size):
-        self.text_size;
+        self.text_size = text_size;
 
     def set_l_value(self, l_value):
         self.l_value = l_value;

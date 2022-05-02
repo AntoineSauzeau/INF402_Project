@@ -10,6 +10,7 @@ from text_switch_widget import TextSwitchWidget
 from message import Message, Alignment
 import cnf
 import webbrowser
+import time
 
 GRID_POS_X = 280
 GRID_POS_Y = 50
@@ -31,6 +32,8 @@ class Interface:
     select_mode = False
     remove_mode = False
     next_area_id = 0
+
+    resolution_time = 0.000001
 
     def __init__(self, controller):
         self.window = pygame.display.set_mode((self.window_width, self.window_height))
@@ -64,7 +67,7 @@ class Interface:
         self.bttn_apply = Button("Appliquer")
         self.bttn_apply.set_color(BLACK)
         self.bttn_apply.set_background_color(WHITE)
-        self.bttn_apply.set_pos((100, 200))
+        self.bttn_apply.set_pos((105, 200))
         self.bttn_apply.set_padding(10)
         self.bttn_apply.set_text_size(24)
         self.bttn_apply.set_border(True)
@@ -74,7 +77,7 @@ class Interface:
         self.bttn_reset = Button("Réinitialiser")
         self.bttn_reset.set_color(BLACK)
         self.bttn_reset.set_background_color(WHITE)
-        self.bttn_reset.set_pos((100, 250))
+        self.bttn_reset.set_pos((105, 250))
         self.bttn_reset.set_padding(10)
         self.bttn_reset.set_text_size(24)
         self.bttn_reset.set_border(True)
@@ -84,7 +87,7 @@ class Interface:
         self.bttn_random = Button("Grille aléatoire")
         self.bttn_random.set_color(BLACK)
         self.bttn_random.set_background_color(WHITE)
-        self.bttn_random.set_pos((100, 315))
+        self.bttn_random.set_pos((105, 315))
         self.bttn_random.set_padding(10)
         self.bttn_random.set_text_size(24)
         self.bttn_random.set_border(True)
@@ -142,8 +145,13 @@ class Interface:
     def create_tsw(self):
         
         self.tsw_grid_size = TextSwitchWidget()
-        self.tsw_grid_size.set_pos(100, 140)
-        self.tsw_grid_size.set_text_size(16)
+        self.tsw_grid_size.set_pos(105, 140)
+        self.tsw_grid_size.set_text_size(30)
+
+        self.tsw_solver_choice = TextSwitchWidget()
+        self.tsw_solver_choice.set_pos(105, 380)
+        self.tsw_solver_choice.set_text_size(26)
+        self.tsw_solver_choice.set_l_value(["Solveur maison", "Pycryptosat"])
 
         l_value = []
         for i in range(4, 31):
@@ -152,14 +160,19 @@ class Interface:
         self.tsw_grid_size.set_l_value(l_value)
 
         self.l_tsw.append(self.tsw_grid_size)
+        self.l_tsw.append(self.tsw_solver_choice)
 
     def create_messages(self):
 
         self.message_bad_selection = Message()
         self.message_insat = Message()
+        self.message_grid_saved = Message()
+        self.message_grid_loaded = Message()
 
         self.l_msg.append(self.message_bad_selection)
         self.l_msg.append(self.message_insat)
+        self.l_msg.append(self.message_grid_saved)
+        self.l_msg.append(self.message_grid_loaded)
 
     #Charge les images et applique des traitements dessus
     def load_images(self):
@@ -199,12 +212,20 @@ class Interface:
                 if bttn.in_bounds(mouse_x, mouse_y):
 
                     if(bttn.get_text() == "Sauvegarder la grille"):
-                        save_grid_to_file(self.grid)
+                        filepath = save_grid_to_file(self.grid)
+                        self.menu_displayed = False
+                        self.show_message_grid_saved(filepath)
+
                     elif(bttn.get_text() == "Charger une grille"):
 
                         grid_object = load_grid_from_file()
                         if(grid_object != None):
                             self.grid = grid_object
+
+                        self.menu_displayed = False
+                        self.show_message_grid_loaded()
+
+
 
         #Si le menu est ouvert on évite de traiter les évênements sur le reste de la fenêtre
         if(self.menu_displayed):
@@ -437,6 +458,22 @@ class Interface:
 
             pygame.draw.circle(self.window, BLACK, (marble_x, marble_y), cell_size/4)
 
+        #On dessine le texte affichant le temps de résolution
+        font = pygame.font.SysFont(str(Path("Fonts/Roboto-Medium.ttf")), size=27)
+
+        text_resolution_time = ""
+        s = format(self.resolution_time, 'f').split(".")
+        text_resolution_time += s[0]
+        text_resolution_time += ","
+        text_resolution_time += s[1][:6]
+        text_resolution_time += " secs"
+
+        text_resolution_time = font.render(text_resolution_time, True, WHITE)
+        text_x = 80 - text.get_width()/2
+        text_y = 24 - text.get_height()/2
+
+        self.window.blit(text_resolution_time, (text_x, text_y))
+
         #On dessine les boutons sur la fenêtre
         for button in self.l_button:
 
@@ -579,62 +616,117 @@ class Interface:
 
         self.message_insat.show(10)
 
+    def show_message_grid_saved(self, file_path):
+
+        title_text = "La grille a bien été sauvegardée !"
+
+        self.message_grid_saved.set_text_title(title_text);
+        self.message_grid_saved.set_text_subtitle("Chemin du fichier : " + file_path);
+        self.message_grid_saved.set_horizontal_alignment(Alignment.Center);
+        self.message_grid_saved.set_text_title_size(40);
+        self.message_grid_saved.set_text_subtitle_size(25);
+        self.message_grid_saved.set_space_between_titles(20);
+        self.message_grid_saved.set_color_title((0, 0, 0));
+        self.message_grid_saved.set_color_subtitle((0, 0, 0));
+        self.message_grid_saved.set_border_color((0, 0, 0));
+        self.message_grid_saved.set_border_thickness(4);
+        self.message_grid_saved.set_title_font_name(str(Path("Fonts/Roboto-Medium.ttf")))
+
+        self.message_grid_saved.set_pos((self.window_width/2, self.window_height/2-150))
+
+        self.message_grid_saved.show(3)
+
+    def show_message_grid_loaded(self):
+
+        title_text = "La grille a été chargée avec succès !"
+
+        self.message_grid_loaded.set_text_title(title_text);
+        self.message_grid_loaded.set_horizontal_alignment(Alignment.Center);
+        self.message_grid_loaded.set_text_title_size(40);
+        self.message_grid_loaded.set_color_title((0, 0, 0));
+        self.message_grid_loaded.set_border_color((0, 0, 0));
+        self.message_grid_loaded.set_border_thickness(4);
+        self.message_grid_loaded.set_title_font_name(str(Path("Fonts/Roboto-Medium.ttf")))
+
+        self.message_grid_loaded.set_pos((self.window_width/2, self.window_height/2-150))
+
+        self.message_grid_loaded.show(3)
+
+    
+
     def solve_grid(self):
 
         if(self.grid.is_empty()):
             return
 
-        solver = pycryptosat.Solver()
         cnf_ = cnf.convert_grid_to_cnf(self.grid)
+
         name_file = "file"
-        cnf_.write_to_dimacs_file(name_file,self.grid.get_n_case_x(),self.grid.get_n_case_y(), solver)
-        cnf2 = cnf.convert_cnf_to_3sat(cnf_,self.grid)
-        name2 = name_file + "_3_sat"
-        #cnf2.write_to_dimacs_file(name2,self.grid.get_n_case_x(),self.grid.get_n_case_y(), solver)
-        #sat, sol = solver.solve()
-        assignations=[]
-        for i in range(1,self.grid.get_n_case_x()**2*2+1):
-            assignations.append((i,False))
-        sat,sol = cnf.dpll(cnf_,assignations)
+        cnf_.write_to_dimacs_file(name_file,self.grid.get_n_case_x(),self.grid.get_n_case_y())
+
+        name_file_2 = name_file + "_3_sat"
+        cnf_3sat = cnf.convert_cnf_to_3sat(cnf_,self.grid)
+        cnf_3sat.write_to_dimacs_file(name_file_2,self.grid.get_n_case_x(),self.grid.get_n_case_y())
+
+
+        start = time.monotonic()
+        if(self.tsw_solver_choice.get_displayed_value() == "Solveur maison"):
+
+            assignations=[]
+            for i in range(1,self.grid.get_n_case_x()**2*2+1):
+                assignations.append((i,False))
+            sat,sol = cnf.dpll(cnf_,assignations)
+
+        elif(self.tsw_solver_choice.get_displayed_value() == "Pycryptosat"):
+            solver = pycryptosat.Solver()
+            cnf_.add_clauses_to_pycryptosat_solver(solver)
+            sat, sol = solver.solve()
+
+        end = time.monotonic()
+        self.resolution_time = end - start
+        print(self.resolution_time)
+
         if sat == False :
             self.show_message_insat()
         else :
             #notre solver
-            sol.sort()
-            """
-            for num, s in sol:
-                c = 
-                l =
-            """
-            for l in range(self.grid.get_n_case_x()):
-                for c in range(self.grid.get_n_case_x()):
-                    cell = self.grid[l][c]
-                    if cell.get_type() == 0:
-                    
-                        b = l*self.grid.get_n_case_x()+c+1
-                        n = (l*self.grid.get_n_case_x()+c+1)+ self.grid.get_n_case_x()**2
-                        numb,sb=sol[b-1]
-                        num,sn=sol[n-1]
-                        if sb :
-                            self.grid.get_l_ball_pos().append((c, l))
-                        if sn :
-                            self.grid.get_l_marble_pos().append((c, l)) 
-        #solver pycryptosat                
-        """
-        else :
-            for l in range(self.grid.get_n_case_x()):
-                for c in range(self.grid.get_n_case_x()):
-                    cell = self.grid[l][c]
-                    if cell.get_type() == 0: 
-                                        
-                        b = l*self.grid.get_n_case_x()+c+1
-                        n = (l*self.grid.get_n_case_x()+c+1)+ self.grid.get_n_case_x()**2
-                        print(b, n)
-                        if(sol[b] == True):
-                            self.grid.get_l_ball_pos().append((c, l))
-                        elif(sol[n] == True):
-                            self.grid.get_l_marble_pos().append((c, l))
-        """
+            if(self.tsw_solver_choice.get_displayed_value() == "Solveur maison"):
+                sol.sort()
+                """
+                for num, s in sol:
+                    c = 
+                    l =
+                """
+                for l in range(self.grid.get_n_case_x()):
+                    for c in range(self.grid.get_n_case_x()):
+                        cell = self.grid[l][c]
+                        if cell.get_type() == 0:
+                        
+                            b = l*self.grid.get_n_case_x()+c+1
+                            n = (l*self.grid.get_n_case_x()+c+1)+ self.grid.get_n_case_x()**2
+                            numb,sb=sol[b-1]
+                            num,sn=sol[n-1]
+                            if sb :
+                                self.grid.get_l_ball_pos().append((c, l))
+                            if sn :
+                                self.grid.get_l_marble_pos().append((c, l)) 
+
+            elif(self.tsw_solver_choice.get_displayed_value() == "Pycryptosat"):             
+
+                for l in range(self.grid.get_n_case_x()):
+                    for c in range(self.grid.get_n_case_x()):
+                        cell = self.grid[l][c]
+                        if cell.get_type() == 0: 
+                                            
+                            b = l*self.grid.get_n_case_x()+c+1
+                            n = (l*self.grid.get_n_case_x()+c+1)+ self.grid.get_n_case_x()**2
+                            print(b, n)
+                            if(sol[b] == True):
+                                self.grid.get_l_ball_pos().append((c, l))
+                            elif(sol[n] == True):
+                                self.grid.get_l_marble_pos().append((c, l))
+
+
             
     def get_filepath_from_popup(self):
 

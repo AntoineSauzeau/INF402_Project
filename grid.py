@@ -218,9 +218,7 @@ class Grid:
             if(is_marked):
                 cell.set_type(1)
             else:
-                print("a")
                 area = self.get_smallest_neighbour_area(cell)
-                print("b")
                 if area == None:
                     cell.set_area(area_index)
                     area_index = area_index + 1
@@ -280,6 +278,7 @@ def save_grid_to_file(grid_object):
     else:
         Pickler(file).dump(grid_object)
         file.close()
+        return filepath
 
 def load_grid_from_file():
 
