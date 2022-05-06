@@ -1,0 +1,2 @@
+pycryptosat==0.6.1
+pygame==2.1.2

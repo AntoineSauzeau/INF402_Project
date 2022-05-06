@@ -33,7 +33,7 @@ class Interface:
     remove_mode = False
     next_area_id = 0
 
-    resolution_time = 0.000001
+    resolution_time = 0.00000000000
 
     def __init__(self, controller):
         self.window = pygame.display.set_mode((self.window_width, self.window_height))

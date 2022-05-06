@@ -1,0 +1,19 @@
+---- Description ----
+Ce programme a pour but de résoudre des grilles du puzzle Dosun Fuwari, que l'utilisateur crée lui même. Réalisé dans le cadre du projet de l'UE INF402, de 2e année de licence informatique à l'UGA.
+
+---- Environnement ----
+Le programme a été testé seulement sur Windows avec python3.8
+
+---- Procédure pour lancer ----
+Il faut installer dans un premier temps les dépendances :
+    pip3 install pycryptosat==0.6.1 pygame==2.1.2
+
+Et esnuite on peut lancer :
+    python3 .\main.py
+
+
+Auteurs :
+    - Antoine SAUZEAU
+    - Julie REYNIER
+    - Alexis THACH
+    - Achraf SBARTAI
