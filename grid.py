@@ -99,10 +99,8 @@ class Grid:
         return l_neighbour
 
     def get_cell_pos_from_pixel_coords(self, x, y, nb_cases):
-
         x_index = (x - interface.GRID_POS_X) // int((GRID_SIZE/nb_cases))
         y_index = (y - interface.GRID_POS_Y) // int((GRID_SIZE/nb_cases))
-
         return self.grid[y_index][x_index]
 
     def is_cell_seq_linked(self, seq_cell):
@@ -231,7 +229,7 @@ class Grid:
         return len(l_cell_by_area.keys()) == 0
 
 
-        
+
 
 
     def get_n_case_x(self):
@@ -259,7 +257,7 @@ class Grid:
     def __setitem__(self, index, value):
         self.grid[index] = value
 
-    
+
 
 
 

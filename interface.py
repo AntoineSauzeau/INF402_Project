@@ -227,11 +227,11 @@ class Interface:
 
 
 
-        #Si le menu est ouvert on évite de traiter les évênements sur le reste de la fenêtre
+        #Si le menu est ouvert on évite de traiter les évènements sur le reste de la fenêtre
         if(self.menu_displayed):
             return
 
-
+    
         if(e.type == pygame.MOUSEBUTTONUP):
 
             mouse_x = e.pos[0]
@@ -307,7 +307,7 @@ class Interface:
                     print(self.grid.is_cell_seq_linked(self.l_cell_selected))
                 self.select_mode=False
 
-            elif(e.button == 2):    #L'utilisateur a fait un click molette  ?
+            elif(e.button == 2):    #L'utilisateur a fait un click molette / ou clique gauche et droit en même temps ?
 
                 cell = self.grid.get_cell_pos_from_pixel_coords(mouse_x, mouse_y,self.grid.get_n_case_x())
                 if(cell.get_type() == 0):
@@ -321,6 +321,7 @@ class Interface:
             elif(e.button == 3):
                 self.remove_mode=False
                 
+        #un boutton est cliqué       
         elif(e.type == pygame.MOUSEBUTTONDOWN):
             
             mouse_x = e.pos[0]
@@ -665,9 +666,8 @@ class Interface:
         cnf_.write_to_dimacs_file(name_file,self.grid.get_n_case_x(),self.grid.get_n_case_y())
 
         name_file_2 = name_file + "_3_sat"
-        cnf_3sat = cnf.convert_cnf_to_3sat(cnf_,self.grid)
-        cnf_3sat.write_to_dimacs_file(name_file_2,self.grid.get_n_case_x(),self.grid.get_n_case_y())
-
+        #cnf_3sat = cnf.convert_cnf_to_3sat(cnf_,self.grid)
+        #cnf_3sat.write_to_dimacs_file(name_file_2,self.grid.get_n_case_x(),self.grid.get_n_case_y())
 
         start = time.monotonic()
         if(self.tsw_solver_choice.get_displayed_value() == "Solveur maison"):
@@ -679,8 +679,12 @@ class Interface:
 
         elif(self.tsw_solver_choice.get_displayed_value() == "Pycryptosat"):
             solver = pycryptosat.Solver()
+            sol = []
+            for i in range(1,self.grid.get_n_case_x()**2*2+1):
+                sol.append((i,False))
             cnf_.add_clauses_to_pycryptosat_solver(solver)
             sat, sol = solver.solve()
+            
 
         end = time.monotonic()
         self.resolution_time = end - start
@@ -692,11 +696,6 @@ class Interface:
             #notre solver
             if(self.tsw_solver_choice.get_displayed_value() == "Solveur maison"):
                 sol.sort()
-                """
-                for num, s in sol:
-                    c = 
-                    l =
-                """
                 for l in range(self.grid.get_n_case_x()):
                     for c in range(self.grid.get_n_case_x()):
                         cell = self.grid[l][c]
@@ -716,11 +715,10 @@ class Interface:
                 for l in range(self.grid.get_n_case_x()):
                     for c in range(self.grid.get_n_case_x()):
                         cell = self.grid[l][c]
-                        if cell.get_type() == 0: 
+                        if cell.get_type() == 0 and cell.get_area() !=-1: 
                                             
                             b = l*self.grid.get_n_case_x()+c+1
                             n = (l*self.grid.get_n_case_x()+c+1)+ self.grid.get_n_case_x()**2
-                            print(b, n)
                             if(sol[b] == True):
                                 self.grid.get_l_ball_pos().append((c, l))
                             elif(sol[n] == True):

@@ -104,7 +104,7 @@ def get_literal_index(var, x, y, grid_size):
     if(var == "x"):
         return y * grid_size + x + 1
     elif(var == "y"):
-        return grid_size * grid_size + y * grid_size + x + 1
+        return (grid_size*grid_size) + y * grid_size + x + 1
 
 #Convertie la grille créée par l'utilisateur en contraintes pour le placement des billes et des ballons, sous forme de cnf
 def convert_grid_to_cnf(grid):
@@ -184,7 +184,7 @@ def convert_grid_to_cnf(grid):
 
                 for i in range(1, l+1):
 
-                    #Si il y a une case noir en dessous du ballon c'est good
+                    #Si il y a une case noir en dessous du ballon c'est bon
                     cell_2 = grid[l-i][c]
                     if cell_2.get_type() == 1:
                         break 
@@ -194,7 +194,7 @@ def convert_grid_to_cnf(grid):
 
                     clause = Clause()
 
-                    #Sinon si c'est pas le cas, il faut qu'il ait un autre ballon sous lui
+                    #Sinon si c'est pas le cas, il faut qu'il ait un autre ballon sur lui
                     lit_1 = Literal(get_literal_index("x", c, l, grid.get_n_case_x()), True)
                     lit_2 = Literal(get_literal_index("x", c, l-i, grid.get_n_case_x()), False)
             

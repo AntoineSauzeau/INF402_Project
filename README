@@ -8,8 +8,10 @@ Le programme a été testé seulement sur Windows avec python3.8
 Il faut installer dans un premier temps les dépendances :
     pip3 install pycryptosat==0.6.1 pygame==2.1.2
 
-Et esnuite on peut lancer :
+Et ensuite on peut lancer :
     python3 .\main.py
+
+Pour charger ou sauvegarder des grilles : on clique sur la roue dentée en haut à gauche de la fenêtre graphique.
 
 
 Auteurs :

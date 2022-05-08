@@ -5,9 +5,11 @@ import sys
 pygame.init()
 
 try:
+# création de l'interface + gestion des évenements
     controller = Controller()
     controller.create_interface()
     controller.start_loop()
+#gestion des erreurs pour le débugage:
 except Exception as e:
     exception_type, exception_object, exception_traceback = sys.exc_info()
     filename = exception_traceback.tb_frame.f_code.co_filename

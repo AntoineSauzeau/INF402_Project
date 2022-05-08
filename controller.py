@@ -21,9 +21,9 @@ class Controller():
 
 
     def start_loop(self):
-        """
-            Start the event/display loop
-        """
+
+        #    Start the event/display loop
+
 
         clock = pygame.time.Clock();
         while(not(self.exit)):
@@ -38,7 +38,7 @@ class Controller():
 
                 self.interface.draw();
 
-            #If the user wants to close the program with Ctrl-C, we close him
+            #Si l'utilisateur veut fermer le programme avec Ctrl+C : ok
             except KeyboardInterrupt:
                 self.quit();
 
